@@ -65,8 +65,9 @@ setInterval(() => {
 }, 5000); // Cambiar imagen cada 5 segundos
 
 // Lógica principal del catálogo
-const API_KEY = 'AIzaSyDwiZWDc66tv4usDIA-IreiJMLFuk0236Q';
-const SPREADSHEET_ID = '1cD50d0-oSTogEe9tYo9ABUSP1ONCy3SAV92zsYYIG84';
+// Cargar configuraci\xC3\xB3n desde config.js
+const API_KEY = window.CONFIG.API_KEY;
+const SPREADSHEET_ID = window.CONFIG.SPREADSHEET_ID;
 const RANGO = 'A2:G';
 const ITEMS_PER_PAGE = 30;
 
