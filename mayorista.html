@@ -36,24 +36,14 @@
         })(window,document,'script','dataLayer','GTM-5P63433D');
         </script>
 
-        <!-- ① AGREGA TU CONFIG DE FIREBASE JUSTO DESPUÉS DEL <script> PRINCIPAL -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-    <script>
-    // ⚠️ Reemplazá con tus credenciales
-const firebaseConfig = {
-  apiKey: "AIzaSyA4fVBCRgkhbTAaOyWg4cAkw7UXokF2uu8",
-  authDomain: "pedidos-87064.firebaseapp.com",
-  databaseURL: "https://pedidos-87064-default-rtdb.firebaseio.com",
-  projectId: "pedidos-87064",
-  storageBucket: "pedidos-87064.firebasestorage.app",
-  messagingSenderId: "294352872886",
-  appId: "1:294352872886:web:a5ffe0a214f23dca73cd17"
-};
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    </script>
+    <script src="config.js"></script>
 
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+    </script>
 	
     <style>
 	    
@@ -297,6 +287,28 @@ const firebaseConfig = {
             cursor: pointer;
             margin-bottom: 5px;
         }
+
+        .modal{
+            position:fixed;inset:0;
+            background:rgba(0,0,0,.6);
+            display:none;                /* se muestra con JS */
+            justify-content:center;align-items:center;
+            z-index:3000;
+        }
+
+        .modal-content{
+            background:#fff;padding:20px;border-radius:8px;max-width:400px;width:90%;
+            box-shadow:0 2px 6px rgba(0,0,0,.3);text-align:center
+        }
+
+        .modal-content input{
+            width:100%;padding:8px;margin:6px 0;box-sizing:border-box
+        }
+
+        .modal-content button{
+            background:#4CAF50;color:#fff;border:none;padding:10px 20px;border-radius:5px;
+            cursor:pointer;margin-top:10px
+        }
 		
     </style>
 </head>
@@ -431,10 +443,24 @@ const firebaseConfig = {
 		<button onclick="limpiarCarrito()"><i class="fas fa-trash"></i> Limpiar</button>
     </div>
 
+    <!-- === Modal solicitar datos de cliente === -->
+    <div id="clienteModal" class="modal">
+    <div class="modal-content">
+        <p><strong>Si es tu primera compra, por favor ingresa:</strong></p>
+        <input id="nombreInput"     type="text" placeholder="Nombre">
+        <input id="direccionInput"  type="text"
+            placeholder="Dirección (solo en caso de requerir envío)">
+        <input id="dniNuevoInput"   type="tel"  placeholder="DNI (solo números)">
+        <hr>
+        <p><strong>Si ya sos cliente, por favor ingresa tu DNI:</strong></p>
+        <input id="dniClienteInput" type="tel"  placeholder="DNI (solo números)">
+        <button id="continuarBtn">Continuar</button>
+    </div>
+    </div>
+
+
     <script>
-        const API_KEY = 'AIzaSyCLRUk_7BRg4TxtcrFYzsV7opqMlqeXD3s';
-        const SPREADSHEET_ID = '1cD50d0-oSTogEe9tYo9ABUSP1ONCy3SAV92zsYYIG84';
-        const RANGO = 'A2:G';
+        src="config.js"
         const ITEMS_PER_PAGE = 30;
 
         let productos = [];
@@ -457,7 +483,7 @@ const firebaseConfig = {
 
         const loadingMessage = document.getElementById('loading-message');
 
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGO}?key=${API_KEY}`)
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_SHEETS_CONFIG.RANGO}?key=${GOOGLE_SHEETS_CONFIG.API_KEY}`)
             .then(response => {
                 if (!response.ok) throw new Error(`Error al acceder a la API: ${response.statusText}`);
                 return response.json();
@@ -752,21 +778,6 @@ const firebaseConfig = {
             }
         }
 
-        // Funciones del carrito de compras
-
-        // Verifica que el mismo artículo no se agregue más de una vez
-        function agregarAlCarrito(nombre, precio, cantidad) {
-            const existe = carrito.find(item => item.nombre === nombre);
-            if (existe) {
-                // Si el artículo ya existe, actualizamos la cantidad
-                existe.cantidad += cantidad;
-            } else {
-                // Si no existe, lo agregamos al carrito
-                carrito.push({ nombre, precio, cantidad });
-            }
-            actualizarCarrito();
-        }
-
         function actualizarCarrito() {
             const cartList = document.getElementById('cart-list');
             const cartContainer = document.querySelector('.cart-container');
@@ -786,7 +797,56 @@ const firebaseConfig = {
             });
         }
 
-        function enviarPedido() {
+        /* === Variables globales === */
+        let datosExtraCliente = {};              // nombre, direccion, dni
+
+        /* === Referencias al modal === */
+        const modal        = document.getElementById('clienteModal');
+        const continuarBtn = document.getElementById('continuarBtn');
+
+        /* === Nuevo flujo ===
+        1) enviarPedido abre el modal
+        2) al validar se llama a enviarPedidoFinal()            */
+
+        /* --- 1. abrir modal --- */
+        function enviarPedido(){
+
+        /* Si estoy en modo edición NO vuelvo a pedir datos */
+        if (modoEdicion){
+            if (carrito.length === 0){
+            alert("El carrito está vacío.");
+            return;
+            }
+            enviarPedidoFinal();          // guarda directamente
+            return;                       // ← importante
+        }
+
+        /* Nuevo pedido: abro el modal */
+        autofillDisparado = false;      // resetea flag
+        modal.style.display = 'flex';
+        }
+
+        /* --- 2. validar y continuar --- */
+        continuarBtn.addEventListener('click', () => {
+
+        const nombre     = document.getElementById('nombreInput').value.trim();
+        const direccion  = document.getElementById('direccionInput').value.trim();
+        const dniNuevo   = document.getElementById('dniNuevoInput').value.trim();
+        const dniCliente = document.getElementById('dniClienteInput').value.trim();
+        const dni        = dniCliente || dniNuevo;
+
+        if (!/^\d{7,10}$/.test(dni)){
+            alert("Ingresá un DNI válido (solo números, 7-10 dígitos).");
+            return;
+        }
+
+        datosExtraCliente = { nombre, direccion, dni };
+        modal.style.display = 'none';
+        enviarPedidoFinal();                     // ← lógica original
+        });
+
+        /* === 3. lógica original (copiada y pegada) === */
+        function enviarPedidoFinal() {
         if (carrito.length === 0) { alert("El carrito está vacío."); return; }
 
         /* ------------------ NUEVO PEDIDO ------------------ */
@@ -798,12 +858,23 @@ const firebaseConfig = {
             id:        pedidoId,
             timestamp: Date.now(),
             locked:    false,
-            items:     carrito.map(it => ({ nombre: it.nombre, cantidad: it.cantidad, valorUSD:  it.precio}))
+
+            /* --- datos extra del cliente --- */
+            cliente: {
+                nombre:    datosExtraCliente.nombre    || '',
+                direccion: datosExtraCliente.direccion || '',
+                dni:       String(datosExtraCliente.dni || '')
+            },
+
+            items: carrito.map(it => ({
+                nombre:   it.nombre,
+                cantidad: it.cantidad,
+                valorUSD: it.precio
+            }))
             };
 
             pedidoRef.set(pedidoObj).then(() => {
             const msg = `Hola, este es mi pedido:%0Ahttps://www.home-point.com.ar/pedidos.html?id=${pedidoId}`;
-
             window.open(`${WHATSAPP_URL}&text=${msg}`);
             limpiarCarrito();
             });
@@ -823,10 +894,27 @@ const firebaseConfig = {
             if (idx > -1) {
                 pedido.items[idx].cantidad += sel.cantidad;
             } else {
-                pedido.items.push({ nombre: sel.nombre, cantidad: sel.cantidad, valorUSD: sel.precio});
+                pedido.items.push({
+                nombre:   sel.nombre,
+                cantidad: sel.cantidad,
+                valorUSD: sel.precio
+                });
             }
             });
-            return pedidoRef.update({ items: pedido.items });
+
+        pedido.cliente = {
+        nombre:    datosExtraCliente.nombre    || pedido.cliente?.nombre    || '',
+        direccion: datosExtraCliente.direccion || pedido.cliente?.direccion || '',
+        dni:       String(
+                    datosExtraCliente.dni ||
+                    pedido.cliente?.dni    || ''
+                    )
+            };
+        return pedidoRef.update({
+        items:   pedido.items,
+        cliente: pedido.cliente
+        });
+
         })
         .then(() => {
             alert("Artículos agregados al pedido 👌");
@@ -834,7 +922,6 @@ const firebaseConfig = {
         })
         .catch(err => { console.error(err); alert("Error actualizando el pedido"); });
         }
-
 
         
         function limpiarCarrito() {
@@ -850,7 +937,41 @@ const firebaseConfig = {
             document.getElementById('marquee-text').innerHTML = MARQUEE_TEXT;
         });
 
-        
+/* === FUNCIÓN DE AUTOCOMPLETADO === */
+function autocompletarPorDNI(dni){
+  db.ref('pedidos')
+    .orderByChild('cliente/dni')
+    .equalTo(String(dni))
+    .limitToFirst(1)
+    .once('value')
+    .then(snap=>{
+      const ped = snap.exists() ? Object.values(snap.val())[0] : null;
+      if (!ped) return;                               // DNI nuevo → nada
+
+      // completá campos
+      nombreInput.value    = ped.cliente?.nombre?.trim()    || '';
+      direccionInput.value = ped.cliente?.direccion?.trim() || '';
+
+      // si carrito NO está vacío y aún no se lanzó, continúa solo
+      if (carrito.length && !autofillDisparado){
+        autofillDisparado = true;        // marco para no repetir
+        continuarBtn.click();            // dispara el flujo normal
+      }
+    })
+    .catch(e => console.error('Error consulta DNI', e));
+    }
+
+    /* === enganchá el blur en AMBOS campos === */
+    ['dniClienteInput', 'dniNuevoInput'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el){
+        el.addEventListener('blur', e=>{
+        const dni = e.target.value.trim();
+        if (/^\d{7,10}$/.test(dni)) autocompletarPorDNI(dni);
+        });
+    }
+    });
+
     </script>
 
     <footer style="text-align: center; padding: 20px; background-color: #FFFFFF; width: 90%; margin: 20px auto; border-radius: 10px;">
