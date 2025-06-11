@@ -13,7 +13,7 @@
         const WHATSAPP_URL = "https://api.whatsapp.com/send/?phone=5491121891006"; // MAYORISTA
         //const WHATSAPP_URL = "https://api.whatsapp.com/send/?phone=5491154597288"; // MINORISTA
 
-        const MARQUEE_TEXT = "💲&nbsp; Valores publicados en dólares o cotización al Blue del día &nbsp;💲 - &nbsp; 🛒 &nbsp; COMPRA MINIMA: 4 articulos iguales o $100.000 en varios distintos &nbsp; 🛍️ &nbsp; - &nbsp; 🚚 &nbsp; ENVÍOS A TODO EL PAÍS &nbsp; 📦"; // MAYORISTA
+        const MARQUEE_TEXT = "💲&nbsp; Valores publicados en dólares o cotización al Blue del día &nbsp;💲 - &nbsp; 🛒 &nbsp; COMPRA MINIMA: 5 articulos iguales o $100.000 en varios distintos &nbsp; 🛍️ &nbsp; - &nbsp; 🚚 &nbsp; ENVÍOS A TODO EL PAÍS &nbsp; 📦"; // MAYORISTA
         //const MARQUEE_TEXT = "🏪 &nbsp; Visita nuestro Showroom en Vicente López &nbsp; 🛍️ &nbsp; - &nbsp; 🚚 &nbsp; ENVÍOS A TODO EL PAÍS &nbsp; 📦 &nbsp;"; // MINORISTA
 
         const ITEMPESOS = "6"; // MAYORISTA
@@ -35,6 +35,25 @@
         'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
         })(window,document,'script','dataLayer','GTM-5P63433D');
         </script>
+
+        <!-- ① AGREGA TU CONFIG DE FIREBASE JUSTO DESPUÉS DEL <script> PRINCIPAL -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+    // ⚠️ Reemplazá con tus credenciales
+const firebaseConfig = {
+  apiKey: "AIzaSyA4fVBCRgkhbTAaOyWg4cAkw7UXokF2uu8",
+  authDomain: "pedidos-87064.firebaseapp.com",
+  databaseURL: "https://pedidos-87064-default-rtdb.firebaseio.com",
+  projectId: "pedidos-87064",
+  storageBucket: "pedidos-87064.firebasestorage.app",
+  messagingSenderId: "294352872886",
+  appId: "1:294352872886:web:a5ffe0a214f23dca73cd17"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    </script>
+
 	
     <style>
 	    
@@ -146,6 +165,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: transform 0.2s;
+            object-fit: contain; /* Mantiene la relación de aspecto */
         }
 
         .card img:hover {
@@ -277,18 +297,6 @@
             cursor: pointer;
             margin-bottom: 5px;
         }
-
-                .card .info {
-    margin-bottom: 3px;
-}
- 
-.card p {
-    margin-bottom: 3px;
-}
-
-.card .action-container {
-    margin-bottom: 0; /* El último no necesita espacio extra */
-}
 		
     </style>
 </head>
@@ -305,9 +313,10 @@
     <div style="text-align: center; font-size: 16px; font-style: italic; margin-top: 5px;">
         Distribuidora Mayorista
     </div>
-    <a href="#" onclick="window.open(WHATSAPP_URL, '_blank')" target="_blank" style="margin-top: 10px; position: relative;">
-        <img src="whatsapp.png" alt="WhatsApp" width="50" height="50" style="position: fixed; bottom: 30px; right: 20px; z-index: 1000; cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">
+<a href="#" onclick="window.open(WHATSAPP_URL, '_blank')" class="whatsapp-link" target="_blank" style="margin-top: 10px; position: relative;">
+        <img src="whatsapp.png" alt="WhatsApp" class="whatsapp-link" width="50" height="50" style="position: fixed; bottom: 30px; right: 20px; z-index: 1000; cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">
     </a>
+</header>
 
     <script>
         // Mostrar el acceso mayorista solo si ITEMPESOS es "4"
@@ -378,6 +387,8 @@
     }
 </style>
 
+</header>
+
     <div id="loading-message" style="text-align: center; font-size: 24px; color: #e61919; font-weight: bold; margin-top: 20px;">
         Cargando, espere por favor...
     </div>
@@ -416,12 +427,12 @@
     <!-- Contenedor del carrito de compras -->
     <div class="cart-container">
         <ul id="cart-list"></ul>
-		<button onclick="enviarPedido()"><i class="fas fa-paper-plane"></i> Enviar</button>
+		<button onclick="enviarPedido()" class="whatsapp-link"><i class="fas fa-paper-plane"></i> Enviar</button>
 		<button onclick="limpiarCarrito()"><i class="fas fa-trash"></i> Limpiar</button>
     </div>
 
     <script>
-        const API_KEY = 'AIzaSyDwiZWDc66tv4usDIA-IreiJMLFuk0236Q';
+        const API_KEY = 'AIzaSyCLRUk_7BRg4TxtcrFYzsV7opqMlqeXD3s';
         const SPREADSHEET_ID = '1cD50d0-oSTogEe9tYo9ABUSP1ONCy3SAV92zsYYIG84';
         const RANGO = 'A2:G';
         const ITEMS_PER_PAGE = 30;
@@ -431,6 +442,18 @@
         let carrito = [];
         let currentLightboxImages = [];
         let currentImageIndex = 0;
+
+        // === soporte para editar un pedido existente ===
+        const urlParams    = new URLSearchParams(window.location.search);
+        const pedidoEditId = urlParams.get('pedido');   // si viene de pedidos.html
+        const modoEdicion  = !!pedidoEditId;
+
+        if (modoEdicion) {
+        const aviso = document.createElement('div');
+        aviso.textContent = `⚙️ Estás agregando artículos al pedido #${pedidoEditId}`;
+        aviso.style.cssText = 'background:#fff7c2;padding:8px;text-align:center;font-weight:bold;';
+        document.body.prepend(aviso);
+        }
 
         const loadingMessage = document.getElementById('loading-message');
 
@@ -764,16 +787,57 @@
         }
 
         function enviarPedido() {
-            if (carrito.length === 0) {
-                alert("El carrito está vacío.");
-                return;
-            }
-            let mensaje = "Hola, me interesan estos artículos:%0A";
-            carrito.forEach(item => {
-                mensaje += `- ${item.nombre} - Cantidad: ${item.cantidad}%0A`;
+        if (carrito.length === 0) { alert("El carrito está vacío."); return; }
+
+        /* ------------------ NUEVO PEDIDO ------------------ */
+        if (!modoEdicion) {
+            const pedidoRef = db.ref('pedidos').push();
+            const pedidoId  = pedidoRef.key;
+
+            const pedidoObj = {
+            id:        pedidoId,
+            timestamp: Date.now(),
+            locked:    false,
+            items:     carrito.map(it => ({ nombre: it.nombre, cantidad: it.cantidad }))
+            };
+
+            pedidoRef.set(pedidoObj).then(() => {
+            let msg = "Hola, este es mi pedido:%0A";
+            carrito.forEach(it => msg += `- ${it.nombre} (x${it.cantidad})%0A`);
+            msg += `%0ARevisalo acá:%0Ahttps://www.home-point.com.ar/pedidos.html?id=${pedidoId}`;
+
+            window.open(`${WHATSAPP_URL}&text=${msg}`);
+            limpiarCarrito();
             });
-            window.open(`${WHATSAPP_URL}&text=${mensaje}`);
+            return;
         }
+
+        /* -------------- EDITAR PEDIDO EXISTENTE -------------- */
+        const pedidoRef = db.ref('pedidos/' + pedidoEditId);
+
+        pedidoRef.once('value').then(snap => {
+            const pedido = snap.val();
+            if (!pedido || pedido.locked) { alert("Este pedido no existe o está cerrado."); return; }
+
+            // fusiono artículos
+            carrito.forEach(sel => {
+            const idx = pedido.items.findIndex(it => it.nombre === sel.nombre);
+            if (idx > -1) {
+                pedido.items[idx].cantidad += sel.cantidad;
+            } else {
+                pedido.items.push({ nombre: sel.nombre, cantidad: sel.cantidad });
+            }
+            });
+            return pedidoRef.update({ items: pedido.items });
+        })
+        .then(() => {
+            alert("Artículos agregados al pedido 👌");
+            window.location.href = `pedidos.html?id=${pedidoEditId}`;
+        })
+        .catch(err => { console.error(err); alert("Error actualizando el pedido"); });
+        }
+
+
         
         function limpiarCarrito() {
             carrito = [];
@@ -787,22 +851,24 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('marquee-text').innerHTML = MARQUEE_TEXT;
         });
+
+        
     </script>
 
     <footer style="text-align: center; padding: 20px; background-color: #FFFFFF; width: 90%; margin: 20px auto; border-radius: 10px;">
         <img src="logo.png" alt="Logo de HomePoint" width="200" style="display: block; margin: 0 auto;">
-        <div class="footer-text">
+        <h1 style="font-size: 14px; font-style: normal; margin: 0; text-align: center; font-weight: normal;"></h1>
             <span style="display: block; margin-top: 10px;"></span>
             Contacto Consumidor Final
-            <a href="https://api.whatsapp.com/send/?phone=5491154597288&text&type=phone_number&app_absent=0" target="_blank" style="color: #4CAF50; text-decoration: none;">+54 9 11 5459-7288</a> <br>
+            <a href="https://api.whatsapp.com/send/?phone=5491154597288&text&type=phone_number&app_absent=0" target="_blank" class="whatsapp-link" style="color: #4CAF50; text-decoration: none;">+54 9 11 5459-7288</a> <br>
             <span style="display: block; margin-top: 5px;"></span>
             Venta Mayorista
-            <a href="https://api.whatsapp.com/send/?phone=5491121891006&text&type=phone_number&app_absent=0" target="_blank" style="color: #4CAF50; text-decoration: none;">+54 9 11 2189-1006</a> <br>
+            <a href="https://api.whatsapp.com/send/?phone=5491121891006&text&type=phone_number&app_absent=0" target="_blank" class="whatsapp-link" style="color: #4CAF50; text-decoration: none;">+54 9 11 2189-1006</a> <br>
             <span style="display: block; margin-top: 10px;"></span>
             Sargento Cabral 1945, Florida Oeste, Vicente López, Buenos Aires <br>
             <span style="display: block; margin-top: 20px;"></span>
             <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3286.805060845621!2d-58.51409442351304!3d-34.53316655377695!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb0d51d5740b3%3A0x2d2dfd9b7cad8e98!2sALI%2C%20Sgto.%20Cabral%201945%2C%20B1604%20Florida%20Oeste%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses!2sar!4v1744725791062!5m2!1ses!2sar" width="300" height="200" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
+        </h1>
     </footer>
 </body>
 </html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido | Home-Point</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+ const firebaseConfig = {
+  apiKey: "AIzaSyA4fVBCRgkhbTAaOyWg4cAkw7UXokF2uu8",
+  authDomain: "pedidos-87064.firebaseapp.com",
+  databaseURL: "https://pedidos-87064-default-rtdb.firebaseio.com",
+  projectId: "pedidos-87064",
+  storageBucket: "pedidos-87064.firebasestorage.app",
+  messagingSenderId: "294352872886",
+  appId: "1:294352872886:web:a5ffe0a214f23dca73cd17"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
+
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f1f1f1;}
+    h1{color:#4CAF50;text-align:center;}
+    #items{max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:20px;}
+    #items div{display:flex;justify-content:space-between;margin-bottom:10px;}
+    #items input{width:60px;text-align:center;}
+    button{background:#4CAF50;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;}
+    button:disabled{background:#9e9e9e;cursor:not-allowed;}
+  </style>
+</head>
+<body>
+  <h1>Detalle del pedido</h1>
+  <div id="estado"></div>
+  <div id="items"></div>
+
+  <div style="text-align:center;margin-top:20px;">
+    <!-- BOTÓN ACTUALIZADO  -->
+    <button id="agregarItemBtn">Agregar artículos desde catálogo</button>
+    <button id="guardarBtn">Guardar Cambios</button>
+    <button id="cerrarBtn">Cerrar Pedido</button>
+  </div>
+
+<script>
+  const qs    = new URLSearchParams(location.search);
+  const id    = qs.get('id');
+  const admin = qs.get('admin') === 'true';
+
+  if (!id){ document.body.innerHTML = "<p>ID inválido</p>"; throw 'no-id'; }
+
+  const pedidoRef = db.ref('pedidos/'+id);
+  let pedidoActual;
+
+  pedidoRef.on('value', snap => {
+    pedidoActual = snap.val();
+    if (!pedidoActual){ document.body.innerHTML = "<p>Pedido no encontrado</p>"; return; }
+
+    document.getElementById('estado').innerText =
+      pedidoActual.locked ? "🔒 Pedido cerrado" : "📝 Pedido abierto";
+    renderItems();
+
+    const bloqueado = pedidoActual.locked;
+    document.getElementById('agregarItemBtn').disabled =
+    document.getElementById('guardarBtn').disabled  = bloqueado;
+    document.getElementById('cerrarBtn').style.display = admin ? 'inline-block' : 'none';
+  });
+
+  function renderItems(){
+    const cont = document.getElementById('items');
+    cont.innerHTML = '';
+    pedidoActual.items.forEach((it,idx)=>{
+      const row = document.createElement('div');
+      row.innerHTML = `<span>${it.nombre}</span>`;
+      const qty = document.createElement('input');
+      qty.type='number'; qty.min=1; qty.value=it.cantidad;
+      qty.onchange=e=>pedidoActual.items[idx].cantidad=parseInt(e.target.value);
+      row.appendChild(qty);
+      const del=document.createElement('button');
+      del.textContent='X';
+      del.onclick=()=>{ pedidoActual.items.splice(idx,1); renderItems(); };
+      row.appendChild(del);
+      cont.appendChild(row);
+    });
+  }
+
+  /* -------- BOTÓN PARA IR AL CATÁLOGO EN MODO EDICIÓN -------- */
+  document.getElementById('agregarItemBtn').onclick = () => {
+    if (pedidoActual.locked) return;
+    window.location.href = `mayorista.html?pedido=${id}`;
+  };
+
+  document.getElementById('guardarBtn').onclick = () => {
+    pedidoRef.update({ items: pedidoActual.items })
+      .then(()=>alert("Pedido actualizado ✔️"))
+      .catch(()=>alert("Error al guardar"));
+  };
+
+  document.getElementById('cerrarBtn').onclick = () => {
+    if (!confirm("¿Cerrar definitivamente el pedido?")) return;
+    pedidoRef.update({ locked:true }).then(()=>alert("Pedido cerrado"));
+  };
+</script>
+</body>
+</html>
