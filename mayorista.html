@@ -798,13 +798,11 @@ const firebaseConfig = {
             id:        pedidoId,
             timestamp: Date.now(),
             locked:    false,
-            items:     carrito.map(it => ({ nombre: it.nombre, cantidad: it.cantidad }))
+            items:     carrito.map(it => ({ nombre: it.nombre, cantidad: it.cantidad, valorUSD:  it.precio}))
             };
 
             pedidoRef.set(pedidoObj).then(() => {
-            let msg = "Hola, este es mi pedido:%0A";
-            carrito.forEach(it => msg += `- ${it.nombre} (x${it.cantidad})%0A`);
-            msg += `%0ARevisalo acá:%0Ahttps://www.home-point.com.ar/pedidos.html?id=${pedidoId}`;
+            const msg = `Hola, este es mi pedido:%0Ahttps://www.home-point.com.ar/pedidos.html?id=${pedidoId}`;
 
             window.open(`${WHATSAPP_URL}&text=${msg}`);
             limpiarCarrito();
@@ -825,7 +823,7 @@ const firebaseConfig = {
             if (idx > -1) {
                 pedido.items[idx].cantidad += sel.cantidad;
             } else {
-                pedido.items.push({ nombre: sel.nombre, cantidad: sel.cantidad });
+                pedido.items.push({ nombre: sel.nombre, cantidad: sel.cantidad, valorUSD: sel.precio});
             }
             });
             return pedidoRef.update({ items: pedido.items });
