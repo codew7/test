@@ -799,6 +799,7 @@
 
         /* === Variables globales === */
         let datosExtraCliente = {};              // nombre, direccion, dni
+        let pedidoEnviado = false;  // ← nueva bandera
 
         /* === Referencias al modal === */
         const modal        = document.getElementById('clienteModal');
@@ -847,6 +848,9 @@
 
         /* === 3. lógica original (copiada y pegada) === */
         function enviarPedidoFinal() {
+        if (pedidoEnviado) return;  // Si ya se envió, salimos
+        pedidoEnviado = true;
+        
         if (carrito.length === 0) { alert("El carrito está vacío."); return; }
 
         /* ------------------ NUEVO PEDIDO ------------------ */
