@@ -102,121 +102,56 @@ pedidoRef.on('value', snap => {
     admin &&  bloqueado ? 'inline-block' : 'none';
 });
 
-  let catalogo = {}; // Diccionario: nombre artículo -> URL imagen
-  
-  // Función para cargar el catálogo desde Google Sheets (exportado como CSV)
-  function loadCatalogo() {
-    // Reemplaza 'URL_CSV_GOOGLE_SHEETS' con la URL de exportación CSV de tu hoja de cálculo
-    fetch('URL_CSV_GOOGLE_SHEETS')
-      .then(response => response.text())
-      .then(csv => {
-        const rows = csv.split('\n').slice(1); // asumiendo que la primera fila es header
-        rows.forEach(row => {
-          const cols = row.split(',');
-          if (cols.length >= 2) {
-            const nombre = cols[0].trim();
-            const imagen = cols[1].trim();
-            catalogo[nombre] = imagen;
-          }
-        });
-      })
-      .catch(err => console.error("Error cargando el catálogo:", err));
-  }
-  
-  // Llama al cargar la página para tener disponible el catálogo
-  loadCatalogo();
-  
   function renderItems(){
-    const cont = document.getElementById('items');
-    cont.innerHTML = '';
+  const cont = document.getElementById('items');
+  cont.innerHTML = '';
 
-    const tbl = document.createElement('table');
-    tbl.innerHTML = `
-      <tr>
-        <th>Artículo</th>
-        <th>Cant.</th>
-        <th>Valor $</th>
-        <th>Subtotal $</th>
-        <th></th>
-      </tr>`;
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `
+    <tr>
+      <th>Artículo</th>
+      <th>Cant.</th>
+      <th>Valor $</th>
+      <th>Subtotal $</th>
+      <th></th>
+    </tr>`;
 
-    let total = 0;
+  let total = 0;
 
-    pedidoActual.items.forEach((it, idx) => {
-      const unitPesos = Math.round((it.valorUSD || 0) * cotizacion);
-      const subtotal  = Math.round(it.cantidad * unitPesos);
-      total += subtotal;
+  pedidoActual.items.forEach((it,idx) => {
+    const unitPesos = Math.round((it.valorUSD || 0) * cotizacion);
+    const subtotal  = Math.round(it.cantidad * unitPesos);
+    total += subtotal;
 
-      const row = tbl.insertRow(-1);
+    const row = tbl.insertRow(-1);
 
-      // Celda con el nombre: al hacer clic muestra la imagen asociada
-      const nameCell = row.insertCell(0);
-      nameCell.textContent = it.nombre;
-      nameCell.style.cursor = 'pointer';
-      nameCell.onclick = () => showItemImage(it.nombre);
-      
-      const qty = document.createElement('input');
-      qty.type='number'; qty.min=1; qty.value=it.cantidad;
-      qty.onchange = e => { 
-        pedidoActual.items[idx].cantidad = parseInt(e.target.value); 
-        renderItems(); 
-      };
-      row.insertCell(1).appendChild(qty);
+    row.insertCell(0).textContent = it.nombre;
 
-      row.insertCell(2).textContent = unitPesos.toLocaleString('es-AR');
-      row.insertCell(3).textContent = subtotal.toLocaleString('es-AR');
+    const qty = document.createElement('input');
+    qty.type='number'; qty.min=1; qty.value=it.cantidad;
+    qty.onchange = e => { pedidoActual.items[idx].cantidad = parseInt(e.target.value); renderItems(); };
+    row.insertCell(1).appendChild(qty);
 
-      const del = document.createElement('button');
-      del.textContent = 'X';
-      del.onclick = () => { pedidoActual.items.splice(idx,1); renderItems(); };
-      row.insertCell(4).appendChild(del);
-    });
+    row.insertCell(2).textContent = unitPesos.toLocaleString('es-AR');
+    row.insertCell(3).textContent = subtotal.toLocaleString('es-AR');
 
-    cont.appendChild(tbl);
+    const del = document.createElement('button');
+    del.textContent = 'X';
+    del.onclick = () => { pedidoActual.items.splice(idx,1); renderItems(); };
+    row.insertCell(4).appendChild(del);
+  });
 
-    let totalDiv = document.getElementById('total');
-    if (!totalDiv){
-      totalDiv = document.createElement('div');
-      totalDiv.id = 'total';
-      cont.appendChild(totalDiv);
-    }
-    totalDiv.textContent = `TOTAL $ ${total.toLocaleString('es-AR')}`;
+  cont.appendChild(tbl);
+
+  let totalDiv = document.getElementById('total');
+  if (!totalDiv){
+    totalDiv = document.createElement('div');
+    totalDiv.id = 'total';
+    cont.appendChild(totalDiv);
   }
+  totalDiv.textContent = `TOTAL $ ${total.toLocaleString('es-AR')}`;
+}
 
-  // Función que muestra la imagen en un modal
-  function showItemImage(nombre) {
-    const imagenUrl = catalogo[nombre];
-    if (!imagenUrl) {
-      alert("No se encontró imagen para el artículo: " + nombre);
-      return;
-    }
-  
-    const modal = document.createElement('div');
-    modal.style.position = 'fixed';
-    modal.style.top = 0;
-    modal.style.left = 0;
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.background = 'rgba(0,0,0,0.5)';
-    modal.style.display = 'flex';
-    modal.style.justifyContent = 'center';
-    modal.style.alignItems = 'center';
-    modal.style.zIndex = 1000;
-    
-    const img = document.createElement('img');
-    img.src = imagenUrl;
-    img.style.maxWidth = '90%';
-    img.style.maxHeight = '90%';
-    img.style.border = '5px solid #fff';
-    img.style.borderRadius = '8px';
-  
-    // Cierra el modal haciendo clic en cualquier parte del overlay
-    modal.onclick = () => modal.remove();
-  
-    modal.appendChild(img);
-    document.body.appendChild(modal);
-  }
-  
   /* -------- BOTÓN PARA IR AL CATÁLOGO EN MODO EDICIÓN -------- */
   document.getElementById('agregarItemBtn').onclick = () => {
     if (pedidoActual.locked) return;
