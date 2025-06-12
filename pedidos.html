@@ -104,6 +104,7 @@
     <button id="reabrirBtn">Reabrir Pedido</button>
     <button id="cancelarBtn">Cancelar Pedido</button>
     <button id="imprimirRotuloBtn" style="display:none;background:#222;">Imprimir Rótulo</button>
+    <button id="despachadoBtn" style="display:none;background:#388e3c;">Despachado</button>
   </div>
 
   <div id="imgLightbox" class="lightbox" onclick="cerrarLB(event)">
@@ -137,8 +138,24 @@
     document.getElementById('dniCliente').textContent =
       pedidoActual.cliente?.dni ? `DNI: ${pedidoActual.cliente.dni}` : '';
 
-    document.getElementById('estado').innerText =
-      pedidoActual.locked ? "🔒 PEDIDO CERRADO" : "📝 PEDIDO ABIERTO";
+    // Mostrar botón Imprimir Rótulo solo para admin
+    if (admin) {
+      document.getElementById('imprimirRotuloBtn').style.display = 'inline-block';
+      // Mostrar botón Despachado solo para admin
+      const despachadoBtn = document.getElementById('despachadoBtn');
+      despachadoBtn.style.display = 'inline-block';
+      // Habilitar solo si hay dirección
+      despachadoBtn.disabled = !pedidoActual.cliente?.direccion;
+      // Cambiar color si está deshabilitado
+      despachadoBtn.style.opacity = despachadoBtn.disabled ? '0.5' : '1';
+    }
+    // Mostrar estado despachado
+    if (pedidoActual.estado === 'Despachado') {
+      document.getElementById('estado').innerText = '📦 PEDIDO DESPACHADO';
+    } else {
+      document.getElementById('estado').innerText =
+        pedidoActual.locked ? "🔒 PEDIDO CERRADO" : "📝 PEDIDO ABIERTO";
+    }
 
     // solo pinto si ya tengo la cotización
     if (cotizacion || cotizacionCierre) renderItems();
@@ -159,6 +176,20 @@
     // Mostrar botón Imprimir Rótulo solo para admin
     if (admin) {
       document.getElementById('imprimirRotuloBtn').style.display = 'inline-block';
+      // Mostrar botón Despachado solo para admin
+      const despachadoBtn = document.getElementById('despachadoBtn');
+      despachadoBtn.style.display = 'inline-block';
+      // Habilitar solo si hay dirección
+      despachadoBtn.disabled = !pedidoActual.cliente?.direccion;
+      // Cambiar color si está deshabilitado
+      despachadoBtn.style.opacity = despachadoBtn.disabled ? '0.5' : '1';
+    }
+    // Mostrar estado despachado
+    if (pedidoActual.estado === 'Despachado') {
+      document.getElementById('estado').innerText = '📦 PEDIDO DESPACHADO';
+    } else {
+      document.getElementById('estado').innerText =
+        pedidoActual.locked ? "🔒 PEDIDO CERRADO" : "📝 PEDIDO ABIERTO";
     }
   });
 
@@ -409,12 +440,13 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
   win.document.write(`
     <html>
     <head>
-      <title>Rótulo de Envío</title>
+      <title>Destinatario</title>
       <style>
         @media print {
+          html, body { width: 210mm; height: 148mm; }
           body { margin: 0; }
         }
-        body {
+        html, body {
           width: 210mm; height: 148mm; /* A5 horizontal */
           margin: 0; padding: 0;
           font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
@@ -422,15 +454,20 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
           display: flex; align-items: center; justify-content: center;
         }
         .rotulo {
+          width: 90%;
+          height: 90%;
+          max-width: 189mm;
+          max-height: 133mm;
           border: 2px solid #222;
           border-radius: 10px;
-          width: 90%;
-          max-width: 500px;
           margin: auto;
           padding: 32px 32px 24px 32px;
           box-sizing: border-box;
           background: #fff;
           box-shadow: 0 2px 12px #0001;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
         .rotulo h2 {
           margin: 0 0 18px 0;
@@ -477,6 +514,12 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
     </html>
   `);
   win.document.close();
+};
+
+document.getElementById('despachadoBtn').onclick = () => {
+  if (!admin || !pedidoActual.cliente?.direccion) return;
+  pedidoRef.update({ estado: 'Despachado' })
+    .then(() => alert('Pedido marcado como despachado'));
 };
 </script>
 
