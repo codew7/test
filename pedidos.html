@@ -103,6 +103,7 @@
     <button id="cerrarBtn">Cerrar Pedido</button>
     <button id="reabrirBtn">Reabrir Pedido</button>
     <button id="cancelarBtn">Cancelar Pedido</button>
+    <button id="imprimirRotuloBtn" style="display:none;background:#222;">Imprimir Rótulo</button>
   </div>
 
   <div id="imgLightbox" class="lightbox" onclick="cerrarLB(event)">
@@ -154,6 +155,11 @@
 
     document.getElementById('reabrirBtn').style.display  =
       admin &&  bloqueado ? 'inline-block' : 'none';
+
+    // Mostrar botón Imprimir Rótulo solo para admin
+    if (admin) {
+      document.getElementById('imprimirRotuloBtn').style.display = 'inline-block';
+    }
   });
 
   function getCotizacionActual() {
@@ -395,13 +401,90 @@ modalEditCliente.addEventListener('mousedown', function(e) {
     modalEditCliente.style.display = 'none';
   }
 });
+
+document.getElementById('imprimirRotuloBtn').onclick = () => {
+  if (!pedidoActual || !pedidoActual.cliente) return;
+  const cli = pedidoActual.cliente;
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html>
+    <head>
+      <title>Rótulo de Envío</title>
+      <style>
+        @media print {
+          body { margin: 0; }
+        }
+        body {
+          width: 210mm; height: 148mm; /* A5 horizontal */
+          margin: 0; padding: 0;
+          font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+          background: #fff;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .rotulo {
+          border: 2px solid #222;
+          border-radius: 10px;
+          width: 90%;
+          max-width: 500px;
+          margin: auto;
+          padding: 32px 32px 24px 32px;
+          box-sizing: border-box;
+          background: #fff;
+          box-shadow: 0 2px 12px #0001;
+        }
+        .rotulo h2 {
+          margin: 0 0 18px 0;
+          font-size: 2.1em;
+          color: #222;
+          letter-spacing: 1px;
+          text-align: left;
+        }
+        .rotulo .dato {
+          font-size: 1.25em;
+          margin-bottom: 10px;
+          color: #222;
+        }
+        .rotulo .etiqueta {
+          font-weight: bold;
+          margin-right: 8px;
+          color: #555;
+        }
+        .rotulo .dni {
+          font-size: 1.1em;
+          color: #444;
+        }
+        .rotulo .email {
+          font-size: 1em;
+          color: #888;
+        }
+        .logo {
+          width: 110px;
+          margin-bottom: 18px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="rotulo">
+        <img src="logo.png" class="logo" alt="Logo HomePoint" />
+        <h2>Rótulo de Envío</h2>
+        <div class="dato"><span class="etiqueta">Nombre:</span> ${cli.nombre || ''}</div>
+        <div class="dato"><span class="etiqueta">Dirección:</span> ${cli.direccion || ''}</div>
+        <div class="dato dni"><span class="etiqueta">DNI:</span> ${cli.dni || ''}</div>
+        <div class="dato email"><span class="etiqueta">Email:</span> ${cli.email || ''}</div>
+      </div>
+      <script>window.print();<\/script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+};
 </script>
 
-<div style="max-width:600px;margin:30px auto 0 auto;font-size:0.98em;color:#444;text-align:center;opacity:0.85;">
+<div style="max-width:600px;margin:30px auto 0 auto;font-size:0.98em;color:#444;text-align:left;opacity:0.85;">
   <hr style="margin:18px 0;">
-  <div style="margin-bottom:4px;">Puede haber variaciones por la fluctuación del dólar.</div>
-  <div style="margin-bottom:4px;">Una vez cerrado el pedido no es posible modificarlo (hay que cancelarlo y hacer uno nuevo).</div>
-  <div style="margin-bottom:4px;">Los pagos con transferencia tienen un recargo del 2%.</div>
+  <div style="margin-bottom:4px;">* Puede haber variaciones por la fluctuación del dólar.</div>
+  <div style="margin-bottom:4px;">* Una vez cerrado el pedido no es posible modificarlo (hay que cancelarlo y hacer uno nuevo).</div>
+  <div style="margin-bottom:4px;">* Los pagos con transferencia tienen un recargo del 2%.</div>
 </div>
 </body>
 </html>
