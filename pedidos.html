@@ -29,17 +29,16 @@
 
 
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:5px;background:#f1f1f1;}
+    body{font-family:Arial,Helvetica,sans-serif;padding:10px;background:#f1f1f1;}
     h1{color:#4CAF50;text-align:center;}
-    #items{max-width:900px;width:100%;margin:0 auto;background:#fff;border-radius:8px;padding:20px;box-sizing:border-box;}
-    .tabla-responsive{width:100%;overflow-x:auto;}
-    table{width:100%;border-collapse:separate;border-spacing:0 2px;margin:10px 0 10px 0;background:#fff;box-sizing:border-box;font-size:0.98em;}
-    th,td{padding:10px 8px;border:1px solid #ddd;text-align:left;word-break:break-word;}
-    th{background:#4CAF50;color:#fff;text-align:center;}
-    td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;letter-spacing:0.5px;}
-    tr:nth-child(even){background:#f7f7f7;}
-    tr:nth-child(odd){background:#fff;}
-
+    #items{max-width:100vw;width:100vw;margin:0 -10px 0 -10px;background:#fff;border-radius:8px;padding:20px 0;box-sizing:border-box;}
+    #items div{display:flex;justify-content:space-between;margin-bottom:10px;}
+    #items input{width:60px;text-align:center;}
+    button{background:#4CAF50;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;margin:5px;}
+    button:disabled{background:#9e9e9e;cursor:not-allowed;}
+    table{width:100vw;min-width:100vw;max-width:100vw;border-collapse:collapse;margin:10px 0 10px 0;background:#fff;box-sizing:border-box;}
+    th,td{padding:8px;border:1px solid #ddd;text-align:center;word-break:break-word;}
+    th{background:#4CAF50;color:#fff}
     #total{font-weight:bold;font-size:1.1em;margin-top:10px;text-align:right}
     #estado{font-weight:bold;text-align:center;margin:20px 0}
     #total {text-align:right;font-weight:bold;font-size:1.1em;margin-top:10px}
@@ -132,15 +131,13 @@ function renderItems() {
   cont.innerHTML = '';
 
   /* ===== tabla base ===== */
-  const wrap = document.createElement('div');
-  wrap.className = 'tabla-responsive';
   const tbl = document.createElement('table');
   tbl.innerHTML = `
     <tr>
       <th>Artículo</th>
-      <th class="num">Cant</th>
-      <th class="num">Valor</th>
-      <th class="num">Subtotal</th>
+      <th>Cant</th>
+      <th>Valor</th>
+      <th>Subtotal</th>
       <th></th>
     </tr>`;
   let total = 0;
@@ -162,40 +159,31 @@ function renderItems() {
     nameCell.appendChild(nameSpan);
 
     /* 2) INPUT cantidad */
-    const qtyCell = row.insertCell(1);
-    qtyCell.className = 'num';
     const qty = document.createElement('input');
     qty.type  = 'number';
     qty.min   = 1;
     qty.value = it.cantidad;
-    qty.style = 'width:60px;text-align:right;font-size:1em;padding:2px 4px;';
     qty.onchange = e => {
       pedidoActual.items[idx].cantidad = parseInt(e.target.value, 10) || 1;
       renderItems();               // refresca totales
     };
-    qtyCell.appendChild(qty);
+    row.insertCell(1).appendChild(qty);
 
     /* 3) valor unitario $ */
-    const valorCell = row.insertCell(2);
-    valorCell.className = 'num';
-    valorCell.textContent = unitPesos.toLocaleString('es-AR');
+    row.insertCell(2).textContent = unitPesos.toLocaleString('es-AR');
 
     /* 4) subtotal $ */
-    const subCell = row.insertCell(3);
-    subCell.className = 'num';
-    subCell.textContent = subtotal.toLocaleString('es-AR');
+    row.insertCell(3).textContent = subtotal.toLocaleString('es-AR');
 
     /* 5) botón eliminar */
-    const delCell = row.insertCell(4);
     const del = document.createElement('button');
     del.textContent = 'X';
     del.className = 'eliminar-articulo';
     del.onclick = () => { pedidoActual.items.splice(idx, 1); renderItems(); };
-    delCell.appendChild(del);
+    row.insertCell(4).appendChild(del);
   });
 
-  wrap.appendChild(tbl);
-  cont.appendChild(wrap);
+  cont.appendChild(tbl);
 
   /* ===== total ===== */
   let totalDiv = document.getElementById('total');
