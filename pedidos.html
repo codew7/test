@@ -186,11 +186,27 @@ function renderItems() {
     window.location.href = `mayorista.html?pedido=${id}`;
   };
 
+  /* === Guardar Cambios === */
   document.getElementById('guardarBtn').onclick = () => {
-    pedidoRef.update({ items: pedidoActual.items })
-      .then(()=>alert("Pedido actualizado ✔️"))
-      .catch(()=>alert("Error al guardar"));
+    /* 1. Validación opcional */
+    if (!pedidoActual || !pedidoActual.items || !pedidoActual.items.length) {
+      alert('El pedido está vacío.');
+      return;
+    }
+
+    /* 2. Enviamos la actualización */
+    firebase
+      .database()
+      .ref('pedidos/' + pedidoActual.id)
+      .update({
+        items:       pedidoActual.items, // lista modificada
+        adminViewed: false,              // ← resetea el indicador
+        lastUpdated: Date.now()          // (útil para ordenar por fecha)
+      })
+      .then(() => alert('Pedido actualizado ✔️'))
+      .catch(()  => alert('Error al guardar'));
   };
+
 
   document.getElementById('cerrarBtn').onclick = () => {
     if (!confirm("¿Cerrar definitivamente el pedido?")) return;
