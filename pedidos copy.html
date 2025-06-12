@@ -43,15 +43,6 @@
     #estado{font-weight:bold;text-align:center;margin:20px 0}
     #total {text-align:right;font-weight:bold;font-size:1.1em;margin-top:10px}
 
-    .lightbox{
-  position:fixed;inset:0;display:none;justify-content:center;align-items:center;
-  background:rgba(0,0,0,.8);z-index:4000;
-}
-.lightbox img{max-width:80%;max-height:80%}
-.lightbox .close{
-  position:absolute;top:15px;right:20px;font-size:2rem;color:#fff;cursor:pointer
-}
-
   </style>
 </head>
 <body>
@@ -68,11 +59,6 @@
     <button id="reabrirBtn">Reabrir Pedido</button>
     <button id="cancelarBtn">Cancelar Pedido</button>
   </div>
-
-  <div id="imgLightbox" class="lightbox" onclick="cerrarLB(event)">
-  <span class="close" onclick="cerrarLB(event)">×</span>
-  <img id="lbImg" src="" alt="">
-</div>
 
 <script>
   const qs    = new URLSearchParams(location.search);
@@ -117,12 +103,6 @@ pedidoRef.on('value', snap => {
 });
 
   function renderItems(){
-    const nombreEl = document.createElement('span');
-nombreEl.textContent = it.nombre;
-nombreEl.style.cursor = 'pointer';
-nombreEl.onclick = () => abrirLB(it.nombre);   // ← abre la imagen
-row.appendChild(nombreEl);
-
   const cont = document.getElementById('items');
   cont.innerHTML = '';
 
@@ -209,37 +189,6 @@ row.appendChild(nombreEl);
     })
     .catch(() => alert("Error al cancelar"));
 };
-
-
-
-/* === Mapa de imágenes por nombre === */
-const mapImg = {};
-
-/* Lo llenamos apenas cargamos los datos de Sheets */
-fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_SHEETS_CONFIG.RANGO}?key=${GOOGLE_SHEETS_CONFIG.API_KEY}`)
-  .then(r=>r.json())
-  .then(({values})=>{
-    values.forEach(row=>{
-      const nombre = row[3];
-      const url    = row[1] || '';
-      mapImg[nombre] = url.split(',').map(u=>u.trim()).filter(Boolean);
-    });
-  });
-
-  function abrirLB(nombre){
-  const urls = mapImg[nombre] || [];
-  if (!urls.length){ alert("Imagen no disponible"); return; }
-  document.getElementById('lbImg').src = urls[0];   // primera imagen
-  document.getElementById('imgLightbox').style.display = 'flex';
-}
-
-function cerrarLB(e){
-  if (e.target === e.currentTarget || e.target.classList.contains('close')){
-    document.getElementById('imgLightbox').style.display = 'none';
-  }
-}
-
-
 
 </script>
 </body>
