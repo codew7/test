@@ -449,9 +449,10 @@
         <p><strong>Si es tu primera compra, por favor ingresa:</strong></p>
         <input id="emailInput" type="email" placeholder="Email">
         <input id="nombreInput"     type="text" placeholder="Nombre">
+        <input id="telefonoInput"   type="tel"  placeholder="Teléfono (en caso de requerir envío)">
         <input id="direccionInput"  type="text"
-            placeholder="Dirección (solo en caso de requerir envío)">
-        <input id="dniNuevoInput"   type="tel"  placeholder="DNI (solo en caso de requerir envío)">
+            placeholder="Dirección (en caso de requerir envío)">
+        <input id="dniNuevoInput"   type="tel"  placeholder="DNI (en caso de requerir envío)">
         <hr>
         <p><strong>Si ya sos cliente, por favor ingresa tu email:</strong></p>
         <input id="emailClienteInput" type="email" placeholder="Email registrado">
@@ -811,6 +812,7 @@
         const direccionInput = document.getElementById('direccionInput');
         const dniNuevoInput = document.getElementById('dniNuevoInput');
         const emailClienteInput = document.getElementById('emailClienteInput');
+        const telefonoInput = document.getElementById('telefonoInput');
 
 
         // Autocompletar datos si el email ya existe en la tabla clientes
@@ -871,6 +873,7 @@
         continuarBtn.addEventListener('click', () => {
           const email      = emailInput.value.trim().toLowerCase();
           const nombre     = nombreInput.value.trim();
+          const telefono   = telefonoInput.value.trim();
           const direccion  = direccionInput.value.trim();
           const dniNuevo   = dniNuevoInput.value.trim();
           const emailCli   = emailClienteInput.value.trim().toLowerCase();
@@ -888,15 +891,15 @@
               .then(snap => {
                 if (!snap.exists()) {
                   alert('No se encontró el email ingresado. Por favor, registrate antes de poder ingresar el pedido.');
-                  return; // No cerrar el modal ni procesar el pedido
+                  return;
                 } else {
-                  // Autocompletar datos y permitir continuar
                   const cli = Object.values(snap.val())[0];
                   nombreInput.value    = cli.nombre    || '';
+                  telefonoInput.value  = cli.telefono  || '';
                   direccionInput.value = cli.direccion || '';
                   dniNuevoInput.value  = cli.dni       || '';
                   emailInput.value     = cli.email     || '';
-                  datosExtraCliente = { email: emailFinal, nombre: cli.nombre, direccion: cli.direccion, dni: cli.dni };
+                  datosExtraCliente = { email: emailFinal, nombre: cli.nombre, telefono: cli.telefono, direccion: cli.direccion, dni: cli.dni };
                   modal.style.display = 'none';
                   enviarPedidoFinal();
                 }
@@ -909,29 +912,29 @@
             db.ref('clientes').orderByChild('email').equalTo(email).limitToFirst(1).once('value')
               .then(snap => {
                 if (snap.exists()) {
-                  // Actualizar datos existentes
                   const key = Object.keys(snap.val())[0];
                   db.ref('clientes/' + key).update({
                     email: emailFinal,
                     nombre,
+                    telefono,
                     direccion,
                     dni
                   }).then(() => {
                     modal.style.display = 'none';
-                    datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
+                    datosExtraCliente = { email: emailFinal, nombre, telefono, direccion, dni };
                     enviarPedidoFinal();
                   });
                   return;
                 }
-                // Si es registro nuevo
                 if (!nombre) {
                   alert("Ingresá tu nombre.");
                   return;
                 }
-                datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
+                datosExtraCliente = { email: emailFinal, nombre, telefono, direccion, dni };
                 db.ref('clientes').push({
                   email: emailFinal,
                   nombre,
+                  telefono,
                   direccion,
                   dni
                 })
@@ -944,28 +947,25 @@
             return;
           }
 
-          // Si es registro nuevo o edición de datos
           if (!nombre) {
             alert("Ingresá tu nombre.");
             return;
           }
 
-          datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
-          // Guardar/actualizar cliente en la tabla clientes
+          datosExtraCliente = { email: emailFinal, nombre, telefono, direccion, dni };
           db.ref('clientes').orderByChild('email').equalTo(emailFinal).limitToFirst(1).once('value')
             .then(snap => {
               let ref;
               if (snap.exists()) {
-                // Actualizar datos existentes
                 const key = Object.keys(snap.val())[0];
                 ref = db.ref('clientes/' + key);
               } else {
-                // Nuevo cliente
                 ref = db.ref('clientes').push();
               }
               return ref.set({
                 email: emailFinal,
                 nombre,
+                telefono,
                 direccion,
                 dni
               });
@@ -994,9 +994,9 @@
             locked:    false,
             adminViewed: false,
 
-            /* --- datos extra del cliente --- */
             cliente: {
                 nombre:    datosExtraCliente.nombre    || '',
+                telefono:  datosExtraCliente.telefono  || '',
                 direccion: datosExtraCliente.direccion || '',
                 dni:       String(datosExtraCliente.dni || '')
             },
@@ -1039,6 +1039,7 @@
 
         pedido.cliente = {
         nombre:    datosExtraCliente.nombre    || pedido.cliente?.nombre    || '',
+        telefono:  datosExtraCliente.telefono  || pedido.cliente?.telefono || '',
         direccion: datosExtraCliente.direccion || pedido.cliente?.direccion || '',
         dni:       String(
                     datosExtraCliente.dni ||
@@ -1048,8 +1049,8 @@
         return pedidoRef.update({
         items:   pedido.items,
         cliente: pedido.cliente,
-        adminViewed: false,               // ← NUEVO
-        lastUpdated: Date.now()           // (opcional, para orden cronológico)
+        adminViewed: false,
+        lastUpdated: Date.now()
         });
 
         })
