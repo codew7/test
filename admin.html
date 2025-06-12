@@ -122,7 +122,7 @@ db.ref('pedidos').on('value', snap => {
       tr.insertCell().textContent = (p.items || []).length;
 
       /* --- 6. Estado --- */
-      tr.insertCell().textContent = p.locked ? '' : 'ABIERTO';
+      tr.insertCell().textContent = p.locked ? 'CERRADO' : 'ABIERTO';
 
       /* --- 7. Acciones --- */
       const acciones = tr.insertCell();
