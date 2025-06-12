@@ -116,16 +116,11 @@ pedidoRef.on('value', snap => {
     admin &&  bloqueado ? 'inline-block' : 'none';
 });
 
-  function renderItems(){
-    const nombreEl = document.createElement('span');
-nombreEl.textContent = it.nombre;
-nombreEl.style.cursor = 'pointer';
-nombreEl.onclick = () => abrirLB(it.nombre);   // ← abre la imagen
-row.appendChild(nombreEl);
-
+function renderItems() {
   const cont = document.getElementById('items');
   cont.innerHTML = '';
 
+  /* ===== tabla base ===== */
   const tbl = document.createElement('table');
   tbl.innerHTML = `
     <tr>
@@ -135,42 +130,60 @@ row.appendChild(nombreEl);
       <th>Subtotal $</th>
       <th></th>
     </tr>`;
-
   let total = 0;
 
-  pedidoActual.items.forEach((it,idx) => {
+  /* ===== filas dinámicas ===== */
+  pedidoActual.items.forEach((it, idx) => {
     const unitPesos = Math.round((it.valorUSD || 0) * cotizacion);
     const subtotal  = Math.round(it.cantidad * unitPesos);
     total += subtotal;
 
     const row = tbl.insertRow(-1);
 
-    row.insertCell(0).textContent = it.nombre;
+    /* 1) NOMBRE clickeable → abre lightbox */
+    const nameCell = row.insertCell(0);
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent  = it.nombre;
+    nameSpan.style.cursor = 'pointer';
+    nameSpan.onclick      = () => abrirLB(it.nombre);
+    nameCell.appendChild(nameSpan);
 
+    /* 2) INPUT cantidad */
     const qty = document.createElement('input');
-    qty.type='number'; qty.min=1; qty.value=it.cantidad;
-    qty.onchange = e => { pedidoActual.items[idx].cantidad = parseInt(e.target.value); renderItems(); };
+    qty.type  = 'number';
+    qty.min   = 1;
+    qty.value = it.cantidad;
+    qty.onchange = e => {
+      pedidoActual.items[idx].cantidad = parseInt(e.target.value, 10) || 1;
+      renderItems();               // refresca totales
+    };
     row.insertCell(1).appendChild(qty);
 
+    /* 3) valor unitario $ */
     row.insertCell(2).textContent = unitPesos.toLocaleString('es-AR');
+
+    /* 4) subtotal $ */
     row.insertCell(3).textContent = subtotal.toLocaleString('es-AR');
 
+    /* 5) botón eliminar */
     const del = document.createElement('button');
     del.textContent = 'X';
-    del.onclick = () => { pedidoActual.items.splice(idx,1); renderItems(); };
+    del.onclick = () => { pedidoActual.items.splice(idx, 1); renderItems(); };
     row.insertCell(4).appendChild(del);
   });
 
   cont.appendChild(tbl);
 
+  /* ===== total ===== */
   let totalDiv = document.getElementById('total');
-  if (!totalDiv){
-    totalDiv = document.createElement('div');
-    totalDiv.id = 'total';
+  if (!totalDiv) {
+    totalDiv       = document.createElement('div');
+    totalDiv.id    = 'total';
     cont.appendChild(totalDiv);
   }
   totalDiv.textContent = `TOTAL $ ${total.toLocaleString('es-AR')}`;
 }
+
 
   /* -------- BOTÓN PARA IR AL CATÁLOGO EN MODO EDICIÓN -------- */
   document.getElementById('agregarItemBtn').onclick = () => {
