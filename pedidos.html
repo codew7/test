@@ -53,6 +53,7 @@
   <h1>Detalle del pedido</h1>
   <div id="nombreCliente" style="text-align:center;font-weight:bold;font-size:1.1em"></div>
   <div id="direccionCliente" style="text-align:center;margin-bottom:4px"></div>
+  <div id="dniCliente" style="text-align:center;margin-bottom:10px"></div>
   <div id="estado"></div>
   <div id="items"></div>
 
@@ -90,6 +91,8 @@ pedidoRef.on('value', snap => {
     pedidoActual.cliente?.nombre || '';
   document.getElementById('direccionCliente').textContent =
     pedidoActual.cliente?.direccion || '';
+  document.getElementById('dniCliente').textContent =
+    pedidoActual.cliente?.dni ? `DNI: ${pedidoActual.cliente.dni}` : '';
 
   document.getElementById('estado').innerText =
     pedidoActual.locked ? "🔒 Pedido cerrado" : "📝 Pedido abierto";
@@ -262,6 +265,78 @@ function cerrarLB(e){
   }
 }
 
+/* Modal para editar datos del cliente */
+let modalEditCliente = document.getElementById('modalEditCliente');
+if (!modalEditCliente) {
+  modalEditCliente = document.createElement('div');
+  modalEditCliente.id = 'modalEditCliente';
+  modalEditCliente.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:5000;';
+  modalEditCliente.innerHTML = `
+    <div style="background:#fff;padding:20px 30px;border-radius:8px;min-width:300px;position:relative;">
+      <button id="closeEditCliente" style="position:absolute;top:10px;right:15px;font-size:1.5em;background:none;border:none;cursor:pointer;">×</button>
+      <h3>Editar datos del cliente</h3>
+      <input id="editNombre" type="text" placeholder="Nombre" style="width:100%;margin-bottom:8px;">
+      <input id="editDireccion" type="text" placeholder="Dirección" style="width:100%;margin-bottom:8px;">
+      <input id="editDni" type="text" placeholder="DNI" style="width:100%;margin-bottom:8px;">
+      <button id="guardarEditCliente" style="background:#4CAF50;width:100%;margin-top:10px;">Guardar</button>
+    </div>
+  `;
+  document.body.appendChild(modalEditCliente);
+}
+
+// Abrir modal con datos actuales
+const editarBtn = document.getElementById('editarClienteBtn');
+editarBtn.onclick = () => {
+  document.getElementById('editNombre').value = pedidoActual.cliente?.nombre || '';
+  document.getElementById('editDireccion').value = pedidoActual.cliente?.direccion || '';
+  document.getElementById('editDni').value = pedidoActual.cliente?.dni || '';
+  modalEditCliente.style.display = 'flex';
+};
+document.getElementById('closeEditCliente').onclick = () => {
+  modalEditCliente.style.display = 'none';
+};
+
+// Guardar cambios en cliente
+const guardarEditBtn = document.getElementById('guardarEditCliente');
+guardarEditBtn.onclick = () => {
+  const nuevoNombre = document.getElementById('editNombre').value.trim();
+  const nuevaDireccion = document.getElementById('editDireccion').value.trim();
+  const nuevoDni = document.getElementById('editDni').value.trim();
+  if (!nuevoNombre || !nuevaDireccion || !nuevoDni) {
+    alert('Todos los campos son obligatorios.');
+    return;
+  }
+  // Actualizar en el pedido
+  pedidoRef.update({
+    'cliente/nombre': nuevoNombre,
+    'cliente/direccion': nuevaDireccion,
+    'cliente/dni': nuevoDni
+  }).then(() => {
+    // Buscar y actualizar en la tabla clientes por email
+    const email = pedidoActual.cliente?.email;
+    if (email) {
+      db.ref('clientes').orderByChild('email').equalTo(email).limitToFirst(1).once('value')
+        .then(snap => {
+          if (snap.exists()) {
+            const key = Object.keys(snap.val())[0];
+            return db.ref('clientes/' + key).update({
+              nombre: nuevoNombre,
+              direccion: nuevaDireccion,
+              dni: nuevoDni
+            });
+          }
+        });
+    }
+    alert('Datos del cliente actualizados');
+    modalEditCliente.style.display = 'none';
+  });
+};
+// Cerrar modal al hacer click fuera del contenido
+modalEditCliente.addEventListener('mousedown', function(e) {
+  if (e.target === modalEditCliente) {
+    modalEditCliente.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
