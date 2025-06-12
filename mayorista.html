@@ -998,7 +998,8 @@
                 nombre:    datosExtraCliente.nombre    || '',
                 telefono:  datosExtraCliente.telefono  || '',
                 direccion: datosExtraCliente.direccion || '',
-                dni:       String(datosExtraCliente.dni || '')
+                dni:       String(datosExtraCliente.dni || ''),
+                email:     datosExtraCliente.email     || ''
             },
 
             items: carrito.map(it => ({
@@ -1044,7 +1045,8 @@
         dni:       String(
                     datosExtraCliente.dni ||
                     pedido.cliente?.dni    || ''
-                    )
+                    ),
+        email:     datosExtraCliente.email     || pedido.cliente?.email || ''
             };
         return pedidoRef.update({
         items:   pedido.items,

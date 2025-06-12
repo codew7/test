@@ -122,39 +122,32 @@ db.ref('pedidos').on('value', snap => {
       tr.insertCell().textContent = (p.items || []).length;
 
       /* --- 6. Estado --- */
-      tr.insertCell().textContent = p.locked ? 'CERRADO' : 'ABIERTO';
+      tr.insertCell().textContent = p.locked ? '' : 'ABIERTO';
 
       /* --- 7. Acciones --- */
       const acciones = tr.insertCell();
 
-      const btnCerrar = document.createElement('button');
       if (p.locked) {
-        btnCerrar.textContent = 'Cerrado';
-        btnCerrar.className = 'cerrado';
-        btnCerrar.disabled = true;
-      } else {
-        btnCerrar.textContent = 'Cerrar';
-        btnCerrar.className = 'cerrar';
-        btnCerrar.onclick = () => cerrarPedido(p.id);
-      }
-      acciones.appendChild(btnCerrar);
-
-      /* Botón Reabrir si está cerrado */
-      if (p.locked) {
+        // Si está cerrado, solo mostrar botón Reabrir
         const btnReabrir = document.createElement('button');
         btnReabrir.textContent = 'Reabrir';
         btnReabrir.className = 'reabrir';
         btnReabrir.onclick = () => reabrirPedido(p.id);
         acciones.appendChild(btnReabrir);
-      }
+      } else {
+        // Si está abierto, mostrar botón Cerrar y Cancelar
+        const btnCerrar = document.createElement('button');
+        btnCerrar.textContent = 'Cerrar';
+        btnCerrar.className = 'cerrar';
+        btnCerrar.onclick = () => cerrarPedido(p.id);
+        acciones.appendChild(btnCerrar);
 
-      /* Botón Cancelar */
-      const btnCanc = document.createElement('button');
-      btnCanc.textContent = 'Cancelar';
-      btnCanc.className = 'cancelar';
-      btnCanc.disabled = p.locked;  // no cancela cerrados
-      btnCanc.onclick = () => cancelarPedido(p.id, p.locked);
-      acciones.appendChild(btnCanc);
+        const btnCanc = document.createElement('button');
+        btnCanc.textContent = 'Cancelar';
+        btnCanc.className = 'cancelar';
+        btnCanc.onclick = () => cancelarPedido(p.id, p.locked);
+        acciones.appendChild(btnCanc);
+      }
 
       tbody.appendChild(tr);
     });
