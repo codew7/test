@@ -447,10 +447,10 @@
     <div id="clienteModal" class="modal">
     <div class="modal-content">
         <p><strong>Si es tu primera compra, por favor ingresa:</strong></p>
-        <input id="nombreInput"     type="text"  placeholder="Nombre">
-        <input id="direccionInput"  type="text"  placeholder="Dirección (solo en caso de requerir envío)">
-        <input id="emailInput"      type="email" placeholder="E-mail">
-        <input id="dniNuevoInput"   type="tel"   placeholder="DNI (solo números)">
+        <input id="nombreInput"     type="text" placeholder="Nombre">
+        <input id="direccionInput"  type="text"
+            placeholder="Dirección (solo en caso de requerir envío)">
+        <input id="dniNuevoInput"   type="tel"  placeholder="DNI (solo números)">
         <hr>
         <p><strong>Si ya sos cliente, por favor ingresa tu DNI:</strong></p>
         <input id="dniClienteInput" type="tel"  placeholder="DNI (solo números)">
@@ -798,7 +798,7 @@
         }
 
         /* === Variables globales === */
-        let datosExtraCliente = {};              // email, nombre, direccion, dni
+        let datosExtraCliente = {};              // nombre, direccion, dni
         let pedidoEnviado = false;  // ← nueva bandera
 
         /* === Referencias al modal === */
@@ -832,22 +832,16 @@
 
         const nombre     = document.getElementById('nombreInput').value.trim();
         const direccion  = document.getElementById('direccionInput').value.trim();
-        const email      = document.getElementById('emailInput').value.trim();
         const dniNuevo   = document.getElementById('dniNuevoInput').value.trim();
         const dniCliente = document.getElementById('dniClienteInput').value.trim();
         const dni        = dniCliente || dniNuevo;
-
-        if (dniCliente === '' && email && !/^\S+@\S+\.\S+$/.test(email)){
-            alert('Ingresá un e-mail válido.');
-            return;
-        }
 
         if (!/^\d{7,10}$/.test(dni)){
             alert("Ingresá un DNI válido (solo números, 7-10 dígitos).");
             return;
         }
 
-        datosExtraCliente = { email, nombre, direccion, dni };
+        datosExtraCliente = { nombre, direccion, dni };
         modal.style.display = 'none';
         enviarPedidoFinal();                     // ← lógica original
         });
@@ -872,7 +866,6 @@
 
             /* --- datos extra del cliente --- */
             cliente: {
-                email:     datosExtraCliente.email     || '',
                 nombre:    datosExtraCliente.nombre    || '',
                 direccion: datosExtraCliente.direccion || '',
                 dni:       String(datosExtraCliente.dni || '')
@@ -886,7 +879,6 @@
             };
 
             pedidoRef.set(pedidoObj).then(() => {
-            guardarCliente(pedidoObj.cliente);
             const msg = `Hola, este es mi pedido:%0Ahttps://www.home-point.com.ar/pedidos.html?id=${pedidoId}`;
             window.open(`${WHATSAPP_URL}&text=${msg}`);
             limpiarCarrito();
@@ -916,7 +908,6 @@
             });
 
         pedido.cliente = {
-        email:     datosExtraCliente.email     || pedido.cliente?.email     || '',
         nombre:    datosExtraCliente.nombre    || pedido.cliente?.nombre    || '',
         direccion: datosExtraCliente.direccion || pedido.cliente?.direccion || '',
         dni:       String(
@@ -933,21 +924,10 @@
 
         })
         .then(() => {
-            guardarCliente(pedido.cliente);
             alert("Artículos agregados al pedido 👌");
             window.location.href = `pedidos.html?id=${pedidoEditId}`;
         })
         .catch(err => { console.error(err); alert("Error actualizando el pedido"); });
-        }
-
-        function guardarCliente(datos){
-            if (!datos.email) return;
-            const clave = datos.email.toLowerCase().replace(/[.#$\[\]/]/g,'_');
-            db.ref('clientes/' + clave).set({
-                nombre:    datos.nombre    || '',
-                direccion: datos.direccion || '',
-                dni:       String(datos.dni || '')
-            }).catch(e => console.error('Error guardando cliente', e));
         }
 
         
