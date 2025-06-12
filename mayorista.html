@@ -445,20 +445,17 @@
 
     <!-- === Modal solicitar datos de cliente === -->
     <div id="clienteModal" class="modal">
-<div class="modal-content">
-  <p><strong>Si es tu primera compra, completá tus datos:</strong></p>
-  <input id="nombreInput"    type="text" placeholder="Nombre">
-  <input id="direccionInput" type="text" placeholder="Dirección (para envíos)">
-  <input id="dniNuevoInput"  type="tel"  placeholder="DNI (sólo números)">
-  <input id="emailInput"     type="email"placeholder="Correo electrónico">
-
-  <hr>
-
-  <p><strong>Si ya sos cliente ingresá tu e-mail:</strong></p>
-  <input id="emailClienteInput" type="email" placeholder="Correo electrónico">
-  <button id="continuarBtn">Continuar</button>
-</div>
-
+    <div class="modal-content">
+        <p><strong>Si es tu primera compra, por favor ingresa:</strong></p>
+        <input id="nombreInput"     type="text" placeholder="Nombre">
+        <input id="direccionInput"  type="text"
+            placeholder="Dirección (solo en caso de requerir envío)">
+        <input id="dniNuevoInput"   type="tel"  placeholder="DNI (solo números)">
+        <hr>
+        <p><strong>Si ya sos cliente, por favor ingresa tu DNI:</strong></p>
+        <input id="dniClienteInput" type="tel"  placeholder="DNI (solo números)">
+        <button id="continuarBtn">Continuar</button>
+    </div>
     </div>
 
 
@@ -832,42 +829,22 @@
 
         /* --- 2. validar y continuar --- */
         continuarBtn.addEventListener('click', () => {
-        const nombre    = nombreInput.value.trim();
-        const direccion = direccionInput.value.trim();
-        const dniNuevo  = dniNuevoInput.value.trim();
-        const emailNew  = emailInput.value.trim().toLowerCase();
 
-        const emailCli  = emailClienteInput.value.trim().toLowerCase();
-        const email     = emailCli || emailNew;          // siempre habrá un e-mail
+        const nombre     = document.getElementById('nombreInput').value.trim();
+        const direccion  = document.getElementById('direccionInput').value.trim();
+        const dniNuevo   = document.getElementById('dniNuevoInput').value.trim();
+        const dniCliente = document.getElementById('dniClienteInput').value.trim();
+        const dni        = dniCliente || dniNuevo;
 
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-            alert('Ingresá un e-mail válido.');
+        if (!/^\d{7,10}$/.test(dni)){
+            alert("Ingresá un DNI válido (solo números, 7-10 dígitos).");
             return;
         }
 
-        /* === si viene como cliente nuevo, guardamos su ficha === */
-        if (emailNew){         // es alta nueva
-            if (!nombre || !dniNuevo){
-            alert('Completá Nombre y DNI.');
-            return;
-            }
-
-            const clienteObj = { nombre, direccion, dni: dniNuevo, email };
-            db.ref('clientes/' + email.replace(/\./g,'_')).set(clienteObj)  // . no permitido
-            .catch(()=>console.warn('No se pudo grabar el cliente'));
-        }
-
-        /* datos que irán al pedido */
-        datosExtraCliente = {
-            nombre, direccion,
-            dni: dniNuevo || '',  // si es cliente viejo quizá no ponga DNI
-            email
-        };
-
+        datosExtraCliente = { nombre, direccion, dni };
         modal.style.display = 'none';
-        enviarPedidoFinal();               // continúa flujo normal
+        enviarPedidoFinal();                     // ← lógica original
         });
-
 
         /* === 3. lógica original (copiada y pegada) === */
         function enviarPedidoFinal() {
@@ -891,9 +868,7 @@
             cliente: {
                 nombre:    datosExtraCliente.nombre    || '',
                 direccion: datosExtraCliente.direccion || '',
-                dni:       String(datosExtraCliente.dni || ''),
-                email:     datosExtraCliente.email     || ''
-},
+                dni:       String(datosExtraCliente.dni || '')
             },
 
             items: carrito.map(it => ({
@@ -935,8 +910,10 @@
         pedido.cliente = {
         nombre:    datosExtraCliente.nombre    || pedido.cliente?.nombre    || '',
         direccion: datosExtraCliente.direccion || pedido.cliente?.direccion || '',
-        dni:       String(datosExtraCliente.dni || pedido.cliente?.dni    || ''),
-        email:     datosExtraCliente.email     || pedido.cliente?.email || ''
+        dni:       String(
+                    datosExtraCliente.dni ||
+                    pedido.cliente?.dni    || ''
+                    )
             };
         return pedidoRef.update({
         items:   pedido.items,
@@ -951,7 +928,7 @@
             window.location.href = `pedidos.html?id=${pedidoEditId}`;
         })
         .catch(err => { console.error(err); alert("Error actualizando el pedido"); });
-        
+        }
 
         
         function limpiarCarrito() {
@@ -968,28 +945,39 @@
         });
 
 /* === FUNCIÓN DE AUTOCOMPLETADO === */
-function autocompletarPorEmail(email){
-  const key = email.toLowerCase().replace(/\./g,'_');
-  db.ref('clientes/' + key).once('value').then(snap=>{
-    if (!snap.exists()) return;
-    const c = snap.val();
-    nombreInput.value    = c.nombre    || '';
-    direccionInput.value = c.direccion || '';
-    dniNuevoInput.value  = c.dni       || '';
-  });
-}
+function autocompletarPorDNI(dni){
+  db.ref('pedidos')
+    .orderByChild('cliente/dni')
+    .equalTo(String(dni))
+    .limitToFirst(1)
+    .once('value')
+    .then(snap=>{
+      const ped = snap.exists() ? Object.values(snap.val())[0] : null;
+      if (!ped) return;                               // DNI nuevo → nada
 
-/* dispara cuando el usuario sale del campo e-mail */
-['emailClienteInput','emailInput'].forEach(id=>{
-  const el = document.getElementById(id);
-  el.addEventListener('blur', e=>{
-    const v = e.target.value.trim();
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) autocompletarPorEmail(v);
-  });
-});
+      // completá campos
+      nombreInput.value    = ped.cliente?.nombre?.trim()    || '';
+      direccionInput.value = ped.cliente?.direccion?.trim() || '';
 
+      // si carrito NO está vacío y aún no se lanzó, continúa solo
+      if (carrito.length && !autofillDisparado){
+        autofillDisparado = true;        // marco para no repetir
+        continuarBtn.click();            // dispara el flujo normal
+      }
+    })
+    .catch(e => console.error('Error consulta DNI', e));
+    }
 
-
+    /* === enganchá el blur en AMBOS campos === */
+    ['dniClienteInput', 'dniNuevoInput'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el){
+        el.addEventListener('blur', e=>{
+        const dni = e.target.value.trim();
+        if (/^\d{7,10}$/.test(dni)) autocompletarPorDNI(dni);
+        });
+    }
+    });
 
     </script>
 
