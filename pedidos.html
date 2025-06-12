@@ -59,13 +59,13 @@
 </head>
 <body>
   <h1>Detalle del pedido</h1>
-  <div style="text-align:center;margin-bottom:10px;">
-    <button id="editarClienteBtn" style="background:#2196F3;">Editar datos del cliente</button>
+  <div style="display:flex;justify-content:center;align-items:center;gap:20px;margin-bottom:10px;">
+    <button id="editarClienteBtn" style="background:#2196F3;">Editar datos personales</button>
+    <div id="estado" style="font-weight:bold;"></div>
   </div>
   <div id="nombreCliente" style="text-align:center;font-weight:bold;font-size:1.1em"></div>
   <div id="direccionCliente" style="text-align:center;margin-bottom:4px"></div>
   <div id="dniCliente" style="text-align:center;margin-bottom:10px"></div>
-  <div id="estado"></div>
   <div id="items"></div>
 
   <div style="text-align:center;margin-top:20px;">
@@ -106,7 +106,7 @@ pedidoRef.on('value', snap => {
     pedidoActual.cliente?.dni ? `DNI: ${pedidoActual.cliente.dni}` : '';
 
   document.getElementById('estado').innerText =
-    pedidoActual.locked ? "🔒 Pedido cerrado" : "📝 Pedido abierto";
+    pedidoActual.locked ? "🔒 PEDIDO CERRADO" : "📝 PEDIDO ABIERTO";
 
   // solo pinto si ya tengo la cotización
   if (cotizacion) renderItems();
