@@ -1034,41 +1034,6 @@
             document.getElementById('marquee-text').innerHTML = MARQUEE_TEXT;
         });
 
-/* === FUNCIÓN DE AUTOCOMPLETADO === */
-function autocompletarPorDNI(dni){
-  db.ref('pedidos')
-    .orderByChild('cliente/dni')
-    .equalTo(String(dni))
-    .limitToFirst(1)
-    .once('value')
-    .then(snap=>{
-      const ped = snap.exists() ? Object.values(snap.val())[0] : null;
-      if (!ped) return;                               // DNI nuevo → nada
-
-      // completá campos
-      nombreInput.value    = ped.cliente?.nombre?.trim()    || '';
-      direccionInput.value = ped.cliente?.direccion?.trim() || '';
-
-      // si carrito NO está vacío y aún no se lanzó, continúa solo
-      if (carrito.length && !autofillDisparado){
-        autofillDisparado = true;        // marco para no repetir
-        continuarBtn.click();            // dispara el flujo normal
-      }
-    })
-    .catch(e => console.error('Error consulta DNI', e));
-    }
-
-    /* === enganchá el blur en AMBOS campos === */
-    ['dniClienteInput', 'dniNuevoInput'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el){
-        el.addEventListener('blur', e=>{
-        const dni = e.target.value.trim();
-        if (/^\d{7,10}$/.test(dni)) autocompletarPorDNI(dni);
-        });
-    }
-    });
-
     // Permitir cerrar el modal al hacer clic fuera del contenido
     modal.addEventListener('mousedown', function(e) {
       if (e.target === modal) {
