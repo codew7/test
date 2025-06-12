@@ -812,6 +812,26 @@
         const dniNuevoInput = document.getElementById('dniNuevoInput');
         const emailClienteInput = document.getElementById('emailClienteInput');
 
+        // Agregar botón X para cerrar el modal
+        const closeModalBtn = document.createElement('button');
+        closeModalBtn.textContent = '×';
+        closeModalBtn.style.position = 'absolute';
+        closeModalBtn.style.top = '10px';
+        closeModalBtn.style.right = '20px';
+        closeModalBtn.style.fontSize = '2em';
+        closeModalBtn.style.background = 'none';
+        closeModalBtn.style.border = 'none';
+        closeModalBtn.style.color = '#888';
+        closeModalBtn.style.cursor = 'pointer';
+        closeModalBtn.style.zIndex = '10';
+        closeModalBtn.setAttribute('aria-label', 'Cerrar');
+        const modalContent = document.querySelector('#clienteModal .modal-content');
+        modalContent.style.position = 'relative';
+        modalContent.appendChild(closeModalBtn);
+        closeModalBtn.addEventListener('click', () => {
+          modal.style.display = 'none';
+        });
+
         // Autocompletar datos si el email ya existe en la tabla clientes
         ['emailClienteInput'].forEach(id => {
           const el = document.getElementById(id);
@@ -878,7 +898,38 @@
           if (!emailFinal || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailFinal)) {
             alert("Ingresá un email válido.");
             return;
+          }
 
+          // Si el usuario intenta continuar solo con emailClienteInput, verificar si está registrado
+          if (!email && emailCli) {
+            db.ref('clientes').orderByChild('email').equalTo(emailCli).limitToFirst(1).once('value')
+              .then(snap => {
+                if (!snap.exists()) {
+                  alert('No se encontró el email ingresado. Por favor, registrate antes de poder ingresar el pedido.');
+                  return; // No cerrar el modal ni procesar el pedido
+                } else {
+                  // Autocompletar datos y permitir continuar
+                  const cli = Object.values(snap.val())[0];
+                  nombreInput.value    = cli.nombre    || '';
+                  direccionInput.value = cli.direccion || '';
+                  dniNuevoInput.value  = cli.dni       || '';
+                  emailInput.value     = cli.email     || '';
+                  datosExtraCliente = { email: emailFinal, nombre: cli.nombre, direccion: cli.direccion, dni: cli.dni };
+                  modal.style.display = 'none';
+                  enviarPedidoFinal();
+                }
+              });
+            return;
+          }
+
+          // Si es registro nuevo o edición de datos
+          if (!nombre) {
+            alert("Ingresá tu nombre.");
+            return;
+          }
+          if (!/^[0-9]{7,10}$/.test(dni)) {
+            alert("Ingresá un DNI válido (solo números, 7-10 dígitos).");
+            return;
           }
 
           datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
