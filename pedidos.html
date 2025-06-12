@@ -47,10 +47,21 @@
     .lightbox img{max-width:50%;max-height:50%}
     .lightbox .close{position:absolute;top:15px;right:20px;font-size:2rem;color:#fff;cursor:pointer}
 
+    button#cancelarBtn {
+      background: #e53935 !important;
+    }
+    button.eliminar-articulo {
+      background: #e53935 !important;
+      color: #fff !important;
+    }
+
   </style>
 </head>
 <body>
   <h1>Detalle del pedido</h1>
+  <div style="text-align:center;margin-bottom:10px;">
+    <button id="editarClienteBtn" style="background:#2196F3;">Editar datos del cliente</button>
+  </div>
   <div id="nombreCliente" style="text-align:center;font-weight:bold;font-size:1.1em"></div>
   <div id="direccionCliente" style="text-align:center;margin-bottom:4px"></div>
   <div id="dniCliente" style="text-align:center;margin-bottom:10px"></div>
@@ -123,9 +134,9 @@ function renderItems() {
   tbl.innerHTML = `
     <tr>
       <th>Artículo</th>
-      <th>Cant.</th>
-      <th>Valor $</th>
-      <th>Subtotal $</th>
+      <th>Cant</th>
+      <th>Valor</th>
+      <th>Subtotal</th>
       <th></th>
     </tr>`;
   let total = 0;
@@ -166,6 +177,7 @@ function renderItems() {
     /* 5) botón eliminar */
     const del = document.createElement('button');
     del.textContent = 'X';
+    del.className = 'eliminar-articulo';
     del.onclick = () => { pedidoActual.items.splice(idx, 1); renderItems(); };
     row.insertCell(4).appendChild(del);
   });
