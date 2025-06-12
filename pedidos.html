@@ -158,17 +158,13 @@
     }
     cotizacionCierre = pedidoActual.cotizacionCierre || null;
 
-    /* === NUEVO: pintar nombre y dirección === */
-    document.getElementById('nombreCliente').textContent =
-      pedidoActual.cliente?.nombre || '';
-    document.getElementById('direccionCliente').textContent =
-      pedidoActual.cliente?.direccion || '';
-    document.getElementById('dniCliente').textContent =
-      pedidoActual.cliente?.dni ? `DNI: ${pedidoActual.cliente.dni}` : '';
-    document.getElementById('telefonoCliente').textContent =
-      pedidoActual.cliente?.telefono ? `Teléfono: ${pedidoActual.cliente.telefono}` : '';
-    document.getElementById('emailCliente').textContent =
-      pedidoActual.cliente?.email ? `Email: ${pedidoActual.cliente.email}` : '';
+    // Mostrar datos del cliente, incluyendo email
+    const cliente = pedidoActual.cliente || {};
+    document.getElementById('nombreCliente').textContent = cliente.nombre || '';
+    document.getElementById('direccionCliente').textContent = cliente.direccion || '';
+    document.getElementById('dniCliente').textContent = cliente.dni ? `DNI: ${cliente.dni}` : '';
+    document.getElementById('telefonoCliente').textContent = cliente.telefono ? `Teléfono: ${cliente.telefono}` : '';
+    document.getElementById('emailCliente').textContent = cliente.email ? `Email: ${cliente.email}` : 'Email no disponible';
 
     // Mostrar botón Imprimir Rótulo solo para admin
     if (admin) {
@@ -402,12 +398,13 @@ function cerrarLB(e){
 
 /* Modal para editar datos del cliente */
 let modalEditCliente = document.getElementById('modalEditCliente');
+// Modal para editar datos del cliente: ancho máximo 500px
 if (!modalEditCliente) {
   modalEditCliente = document.createElement('div');
   modalEditCliente.id = 'modalEditCliente';
   modalEditCliente.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:5000;';
   modalEditCliente.innerHTML = `
-    <div style="background:#fff;padding:20px 30px;border-radius:8px;min-width:300px;position:relative;">
+    <div style="background:#fff;padding:20px 30px;border-radius:8px;min-width:300px;max-width:500px;width:100%;position:relative;">
       <button id="closeEditCliente" style="position:absolute;top:10px;right:15px;font-size:1.5em;background:none;border:none;cursor:pointer;">×</button>
       <h3>Editar datos del cliente</h3>
       <input id="editNombre" type="text" placeholder="Nombre" style="width:100%;margin-bottom:8px;">
@@ -505,21 +502,21 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
       <title>Destinatario</title>
       <style>
         @media print {
-          html, body { width: 210mm; height: 297mm; }
+          html, body { width: 210mm; height: 148mm; }
           body { margin: 0; }
         }
         html, body {
-          width: 210mm; height: 297mm; /* A4 vertical */
+          width: 210mm; height: 148mm; /* A5 horizontal */
           margin: 0; padding: 0;
           font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
           background: #fff;
           display: flex; align-items: center; justify-content: center;
         }
         .rotulo {
-          width: 90%;
+          width: 95%;
           height: 90%;
-          max-width: 189mm;
-          max-height: 267mm;
+          max-width: 200mm;
+          max-height: 130mm;
           border: 2px solid #222;
           border-radius: 10px;
           margin: auto;
@@ -530,36 +527,38 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
           display: flex;
           flex-direction: column;
           justify-content: center;
+          align-items: flex-start;
         }
         .rotulo h2 {
-          margin: 0 0 18px 0;
-          font-size: 2.1em;
+          margin: 0 0 30px 0;
+          font-size: 3.2em;
           color: #222;
           letter-spacing: 1px;
           text-align: left;
         }
         .rotulo .dato {
-          font-size: 2em;
-          margin-bottom: 18px;
+          font-size: 2.7em;
+          margin-bottom: 22px;
           color: #222;
+          line-height: 1.1;
         }
         .rotulo .etiqueta {
           font-weight: bold;
-          margin-right: 12px;
+          margin-right: 18px;
           color: #555;
-          font-size: 1.1em;
+          font-size: 1em;
         }
         .rotulo .dni {
-          font-size: 1.5em;
+          font-size: 2.2em;
           color: #444;
         }
         .rotulo .email {
-          font-size: 1.2em;
+          font-size: 1.7em;
           color: #888;
         }
         .logo {
-          width: 110px;
-          margin-bottom: 18px;
+          width: 150px;
+          margin-bottom: 28px;
         }
       </style>
     </head>
