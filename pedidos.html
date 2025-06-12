@@ -447,15 +447,25 @@ guardarEditBtn.onclick = () => {
     if (email) {
       db.ref('clientes').orderByChild('email').equalTo(email).once('value')
         .then(snap => {
+          const updates = {};
           if (snap.exists()) {
-            const updates = {};
             Object.keys(snap.val()).forEach(key => {
               updates[key + '/nombre'] = nuevoNombre;
               updates[key + '/direccion'] = nuevaDireccion;
               updates[key + '/dni'] = nuevoDni;
             });
-            return db.ref('clientes').update(updates);
+          } else {
+            // Si no existe, crea el cliente
+            const nuevoCliente = {
+              nombre: nuevoNombre,
+              direccion: nuevaDireccion,
+              dni: nuevoDni,
+              email: email
+            };
+            const nuevoKey = db.ref('clientes').push().key;
+            updates[nuevoKey] = nuevoCliente;
           }
+          return db.ref('clientes').update(updates);
         });
     }
     alert('Datos del cliente actualizados');
@@ -479,11 +489,11 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
       <title>Destinatario</title>
       <style>
         @media print {
-          html, body { width: 210mm; height: 148mm; }
+          html, body { width: 210mm; height: 297mm; }
           body { margin: 0; }
         }
         html, body {
-          width: 210mm; height: 148mm; /* A5 horizontal */
+          width: 210mm; height: 297mm; /* A4 vertical */
           margin: 0; padding: 0;
           font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
           background: #fff;
@@ -493,7 +503,7 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
           width: 90%;
           height: 90%;
           max-width: 189mm;
-          max-height: 133mm;
+          max-height: 267mm;
           border: 2px solid #222;
           border-radius: 10px;
           margin: auto;
