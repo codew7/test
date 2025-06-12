@@ -32,17 +32,20 @@
   <style>
     body{font-family:Arial,Helvetica,sans-serif;padding:6px;background:#f1f1f1;}
     h1{color:#4CAF50;text-align:center;}
-    #items{max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:20px;}
+    #items{max-width:600px;margin:0 0 0 3px;background:#fff;border-radius:8px;padding:20px;box-sizing:border-box;}
     #items div{display:flex;justify-content:space-between;margin-bottom:10px;}
     #items input{width:60px;text-align:center;}
     button{background:#4CAF50;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;margin:5px;}
     button:disabled{background:#9e9e9e;cursor:not-allowed;}
-    table{width:100%;border-collapse:collapse;margin:5px auto;background:#fff;font-size: small;}
+    table{width:100%;border-collapse:collapse;margin:5px auto 5px 0;background:#fff;font-size: small;}
     th,td{padding:8px;border:1px solid #ddd;text-align:center}
     th{background:#4CAF50;color:#fff}
     #total{font-weight:bold;font-size:1.1em;margin-top:10px;text-align:center}
     #estado{font-weight:bold;text-align:center;margin:20px 0}
     #total {text-align:center;font-weight:bold;font-size:1.1em;margin-top:15px}
+    th.cant,td.cant{width:1%;white-space:nowrap;min-width:40px;}
+    th.elim,td.elim{width:1%;min-width:28px;padding-left:0;padding-right:0;}
+    .eliminar-articulo{background:#e53935 !important;color:#fff !important;font-size:0.9em;padding:2px 7px 2px 7px;margin:0;line-height:1;min-width:22px;min-height:22px;border-radius:50%;}
 
     .lightbox{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.8);z-index:4000;}
     .lightbox img{max-width:50%;max-height:50%}
@@ -145,10 +148,10 @@
     tbl.innerHTML = `
       <tr>
         <th>Artículo</th>
-        <th>Cant</th>
+        <th class="cant">Cant</th>
         <th>Valor</th>
         <th>Subtotal</th>
-        <th></th>
+        <th class="elim"></th>
       </tr>`;
     let total = 0;
     const coti = getCotizacionActual();
@@ -168,15 +171,18 @@
       nameCell.appendChild(nameSpan);
 
       /* 2) INPUT cantidad */
+      const qtyCell = row.insertCell(1);
+      qtyCell.className = 'cant';
       const qty = document.createElement('input');
       qty.type  = 'number';
       qty.min   = 1;
       qty.value = it.cantidad;
+      qty.style = 'width:40px;text-align:right;font-size:1em;padding:2px 2px;';
       qty.onchange = e => {
         pedidoActual.items[idx].cantidad = parseInt(e.target.value, 10) || 1;
-        renderItems();               // refresca totales
+        renderItems();
       };
-      row.insertCell(1).appendChild(qty);
+      qtyCell.appendChild(qty);
 
       /* 3) valor unitario $ */
       row.insertCell(2).textContent = unitPesos.toLocaleString('es-AR');
@@ -185,11 +191,13 @@
       row.insertCell(3).textContent = subtotal.toLocaleString('es-AR');
 
       /* 5) botón eliminar */
+      const delCell = row.insertCell(4);
+      delCell.className = 'elim';
       const del = document.createElement('button');
       del.textContent = 'X';
       del.className = 'eliminar-articulo';
       del.onclick = () => { pedidoActual.items.splice(idx, 1); renderItems(); };
-      row.insertCell(4).appendChild(del);
+      delCell.appendChild(del);
     });
 
     cont.appendChild(tbl);
