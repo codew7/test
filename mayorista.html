@@ -822,7 +822,15 @@
                 db.ref('clientes').orderByChild('email').equalTo(email).limitToFirst(1).once('value')
                   .then(snap => {
                     const cli = snap.exists() ? Object.values(snap.val())[0] : null;
-                    if (!cli) return;
+                    if (!cli) {
+                      alert('No se encontró el email ingresado. Por favor, registrate antes de poder ingresar el pedido.');
+                      // Limpiar campos por si había datos previos
+                      nombreInput.value = '';
+                      direccionInput.value = '';
+                      dniNuevoInput.value = '';
+                      emailInput.value = '';
+                      return;
+                    }
                     nombreInput.value    = cli.nombre    || '';
                     direccionInput.value = cli.direccion || '';
                     dniNuevoInput.value  = cli.dni       || '';
