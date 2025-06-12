@@ -103,8 +103,10 @@
     <button id="cerrarBtn">Cerrar Pedido</button>
     <button id="reabrirBtn">Reabrir Pedido</button>
     <button id="cancelarBtn">Cancelar Pedido</button>
+  </div>
+  <div id="accionesAdmin" style="text-align:center;margin-top:10px;">
     <button id="imprimirRotuloBtn" style="display:none;background:#222;">Imprimir Rótulo</button>
-    <button id="despachadoBtn" style="display:none;background:#388e3c;">Despachado</button>
+    <button id="despachadoBtn" style="display:none;background:#444;">Despachado</button>
   </div>
 
   <div id="imgLightbox" class="lightbox" onclick="cerrarLB(event)">
@@ -140,14 +142,24 @@
 
     // Mostrar botón Imprimir Rótulo solo para admin
     if (admin) {
-      document.getElementById('imprimirRotuloBtn').style.display = 'inline-block';
-      // Mostrar botón Despachado solo para admin
+      const imprimirBtn = document.getElementById('imprimirRotuloBtn');
       const despachadoBtn = document.getElementById('despachadoBtn');
+      imprimirBtn.style.display = 'inline-block';
       despachadoBtn.style.display = 'inline-block';
       // Habilitar solo si hay dirección
-      despachadoBtn.disabled = !pedidoActual.cliente?.direccion;
-      // Cambiar color si está deshabilitado
+      const tieneDireccion = !!pedidoActual.cliente?.direccion;
+      imprimirBtn.disabled = !tieneDireccion;
+      imprimirBtn.style.opacity = imprimirBtn.disabled ? '0.5' : '1';
+      despachadoBtn.disabled = !tieneDireccion;
       despachadoBtn.style.opacity = despachadoBtn.disabled ? '0.5' : '1';
+      // Cambiar texto y color según estado
+      if (pedidoActual.estado === 'Despachado') {
+        despachadoBtn.textContent = 'Quitar Despachado';
+        despachadoBtn.style.background = '#888';
+      } else {
+        despachadoBtn.textContent = 'Despachado';
+        despachadoBtn.style.background = '#444';
+      }
     }
     // Mostrar estado despachado
     if (pedidoActual.estado === 'Despachado') {
@@ -518,8 +530,9 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
 
 document.getElementById('despachadoBtn').onclick = () => {
   if (!admin || !pedidoActual.cliente?.direccion) return;
-  pedidoRef.update({ estado: 'Despachado' })
-    .then(() => alert('Pedido marcado como despachado'));
+  const nuevoEstado = pedidoActual.estado === 'Despachado' ? null : 'Despachado';
+  pedidoRef.update({ estado: nuevoEstado })
+    .then(() => alert(nuevoEstado ? 'Pedido marcado como despachado' : 'Estado despachado quitado'));
 };
 </script>
 
