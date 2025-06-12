@@ -904,21 +904,31 @@
             return;
           }
 
-          // Nueva regla: no permitir registrar un email ya existente
+          // Nueva regla: si el email ya está registrado, actualiza los datos existentes en la tabla clientes
           if (email) {
             db.ref('clientes').orderByChild('email').equalTo(email).limitToFirst(1).once('value')
               .then(snap => {
                 if (snap.exists()) {
-                  alert('El email ya está registrado. Si sos ese cliente, usá el campo "Email registrado".');
+                  // Actualizar datos existentes
+                  const key = Object.keys(snap.val())[0];
+                  db.ref('clientes/' + key).update({
+                    email: emailFinal,
+                    nombre,
+                    direccion,
+                    dni
+                  }).then(() => {
+                    modal.style.display = 'none';
+                    datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
+                    enviarPedidoFinal();
+                  });
                   return;
                 }
-                // Si es registro nuevo o edición de datos
+                // Si es registro nuevo
                 if (!nombre) {
                   alert("Ingresá tu nombre.");
                   return;
                 }
                 datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
-                // Guardar/actualizar cliente en la tabla clientes
                 db.ref('clientes').push({
                   email: emailFinal,
                   nombre,
