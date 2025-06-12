@@ -447,13 +447,14 @@
     <div id="clienteModal" class="modal">
     <div class="modal-content">
         <p><strong>Si es tu primera compra, por favor ingresa:</strong></p>
+        <input id="emailInput" type="email" placeholder="Email">
         <input id="nombreInput"     type="text" placeholder="Nombre">
         <input id="direccionInput"  type="text"
             placeholder="Dirección (solo en caso de requerir envío)">
         <input id="dniNuevoInput"   type="tel"  placeholder="DNI (solo números)">
         <hr>
-        <p><strong>Si ya sos cliente, por favor ingresa tu DNI:</strong></p>
-        <input id="dniClienteInput" type="tel"  placeholder="DNI (solo números)">
+        <p><strong>Si ya sos cliente, por favor ingresa tu email:</strong></p>
+        <input id="emailClienteInput" type="email" placeholder="Email registrado">
         <button id="continuarBtn">Continuar</button>
     </div>
     </div>
@@ -798,16 +799,45 @@
         }
 
         /* === Variables globales === */
-        let datosExtraCliente = {};              // nombre, direccion, dni
+        let datosExtraCliente = {};              // email, nombre, direccion, dni
         let pedidoEnviado = false;  // ← nueva bandera
+        let autofillDisparado = false;
 
         /* === Referencias al modal === */
         const modal        = document.getElementById('clienteModal');
         const continuarBtn = document.getElementById('continuarBtn');
+        const emailInput = document.getElementById('emailInput');
+        const nombreInput = document.getElementById('nombreInput');
+        const direccionInput = document.getElementById('direccionInput');
+        const dniNuevoInput = document.getElementById('dniNuevoInput');
+        const emailClienteInput = document.getElementById('emailClienteInput');
 
-        /* === Nuevo flujo ===
-        1) enviarPedido abre el modal
-        2) al validar se llama a enviarPedidoFinal()            */
+        // Autocompletar datos si el email ya existe en la tabla clientes
+        ['emailClienteInput'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.addEventListener('blur', e => {
+              const email = e.target.value.trim().toLowerCase();
+              if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+                db.ref('clientes').orderByChild('email').equalTo(email).limitToFirst(1).once('value')
+                  .then(snap => {
+                    const cli = snap.exists() ? Object.values(snap.val())[0] : null;
+                    if (!cli) return;
+                    nombreInput.value    = cli.nombre    || '';
+                    direccionInput.value = cli.direccion || '';
+                    dniNuevoInput.value  = cli.dni       || '';
+                    emailInput.value     = cli.email     || '';
+                    // Si carrito NO está vacío y aún no se lanzó, continúa solo
+                    if (carrito.length && !autofillDisparado) {
+                      autofillDisparado = true;
+                      continuarBtn.click();
+                    }
+                  })
+                  .catch(e => console.error('Error consulta email cliente', e));
+              }
+            });
+          }
+        });
 
         /* --- 1. abrir modal --- */
         function enviarPedido(){
@@ -829,24 +859,54 @@
 
         /* --- 2. validar y continuar --- */
         continuarBtn.addEventListener('click', () => {
+          const email      = emailInput.value.trim().toLowerCase();
+          const nombre     = nombreInput.value.trim();
+          const direccion  = direccionInput.value.trim();
+          const dniNuevo   = dniNuevoInput.value.trim();
+          const emailCli   = emailClienteInput.value.trim().toLowerCase();
+          const dni        = dniNuevo;
 
-        const nombre     = document.getElementById('nombreInput').value.trim();
-        const direccion  = document.getElementById('direccionInput').value.trim();
-        const dniNuevo   = document.getElementById('dniNuevoInput').value.trim();
-        const dniCliente = document.getElementById('dniClienteInput').value.trim();
-        const dni        = dniCliente || dniNuevo;
-
-        if (!/^\d{7,10}$/.test(dni)){
+          let emailFinal = email || emailCli;
+          if (!emailFinal || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailFinal)) {
+            alert("Ingresá un email válido.");
+            return;
+          }
+          if (!/^[0-9]{7,10}$/.test(dni)) {
             alert("Ingresá un DNI válido (solo números, 7-10 dígitos).");
             return;
-        }
+          }
+          if (!nombre) {
+            alert("Ingresá tu nombre.");
+            return;
+          }
 
-        datosExtraCliente = { nombre, direccion, dni };
-        modal.style.display = 'none';
-        enviarPedidoFinal();                     // ← lógica original
+          datosExtraCliente = { email: emailFinal, nombre, direccion, dni };
+          // Guardar/actualizar cliente en la tabla clientes
+          db.ref('clientes').orderByChild('email').equalTo(emailFinal).limitToFirst(1).once('value')
+            .then(snap => {
+              let ref;
+              if (snap.exists()) {
+                // Actualizar datos existentes
+                const key = Object.keys(snap.val())[0];
+                ref = db.ref('clientes/' + key);
+              } else {
+                // Nuevo cliente
+                ref = db.ref('clientes').push();
+              }
+              return ref.set({
+                email: emailFinal,
+                nombre,
+                direccion,
+                dni
+              });
+            })
+            .then(() => {
+              modal.style.display = 'none';
+              enviarPedidoFinal();
+            })
+            .catch(err => { alert('Error guardando datos de cliente'); console.error(err); });
         });
 
-        /* === 3. lógica original (copiada y pegada) === */
         function enviarPedidoFinal() {
         if (pedidoEnviado) return;  // Si ya se envió, salimos
         pedidoEnviado = true;
