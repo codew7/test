@@ -466,10 +466,15 @@ guardarEditBtn.onclick = () => {
             updates[nuevoKey] = nuevoCliente;
           }
           return db.ref('clientes').update(updates);
+        })
+        .then(() => {
+          alert('Datos del cliente actualizados');
+          modalEditCliente.style.display = 'none';
         });
+    } else {
+      alert('Datos del cliente actualizados');
+      modalEditCliente.style.display = 'none';
     }
-    alert('Datos del cliente actualizados');
-    modalEditCliente.style.display = 'none';
   });
 };
 // Cerrar modal al hacer click fuera del contenido
