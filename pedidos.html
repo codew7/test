@@ -513,21 +513,22 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
           text-align: left;
         }
         .rotulo .dato {
-          font-size: 1.25em;
-          margin-bottom: 10px;
+          font-size: 2em;
+          margin-bottom: 18px;
           color: #222;
         }
         .rotulo .etiqueta {
           font-weight: bold;
-          margin-right: 8px;
+          margin-right: 12px;
           color: #555;
+          font-size: 1.1em;
         }
         .rotulo .dni {
-          font-size: 1.1em;
+          font-size: 1.5em;
           color: #444;
         }
         .rotulo .email {
-          font-size: 1em;
+          font-size: 1.2em;
           color: #888;
         }
         .logo {
@@ -539,7 +540,7 @@ document.getElementById('imprimirRotuloBtn').onclick = () => {
     <body>
       <div class="rotulo">
         <img src="logo.png" class="logo" alt="Logo HomePoint" />
-        <h2>Rótulo de Envío</h2>
+        <h2>Destinatario</h2>
         <div class="dato"><span class="etiqueta">Nombre:</span> ${cli.nombre || ''}</div>
         <div class="dato"><span class="etiqueta">Dirección:</span> ${cli.direccion || ''}</div>
         <div class="dato dni"><span class="etiqueta">DNI:</span> ${cli.dni || ''}</div>
@@ -562,9 +563,9 @@ document.getElementById('despachadoBtn').onclick = () => {
 
 <div style="max-width:600px;margin:30px auto 0 auto;font-size:0.98em;color:#444;text-align:left;opacity:0.85;">
   <hr style="margin:18px 0;">
-  <div style="margin-bottom:4px;">* Mientras el pedido se mantenga Abierto, los precios pueden variar debido a fluctuaciones de cotización.</div>
-  <div style="margin-bottom:4px;">* Al Cerrar el pedido, los valores quedan fijados, pero ya no será posible modifcar el pedido, siendo necesario cancelarlo y generar uno nuevo.</div>
-  <div style="margin-bottom:4px;">* Los pagos mediante transferencia cuentan con un recargo adicional del 2 % sobre el total.</div>
+  <div style="margin-bottom:5px;">* Mientras el pedido se mantenga Abierto, los precios pueden variar debido a fluctuaciones de cotización.</div>
+  <div style="margin-bottom:5px;">* Al Cerrar el pedido, los valores quedan fijados, pero ya no será posible modifcar el pedido, siendo necesario cancelarlo y generar uno nuevo.</div>
+  <div style="margin-bottom:5px;">* Los pagos mediante transferencia cuentan con un recargo adicional del 2 % sobre el total.</div>
 </div>
 </body>
 </html>
