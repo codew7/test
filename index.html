@@ -14,7 +14,7 @@
         #camera, #result {
             margin: 15px 0;
         }
-        #labels {
+        #labels, #producto {
             background: #fff;
             border-radius: 10px;
             padding: 16px;
@@ -50,9 +50,18 @@
         <button id="analyzeBtn">Analizar imagen</button>
     </div>
     <div id="labels"></div>
+    <div id="producto"></div>
 
     <script>
+        // Configuración de Sheets
+        const GOOGLE_SHEETS_CONFIG = {
+            API_KEY: 'AIzaSyCLRUk_7BRg4TxtcrFYzsV7opqMlqeXD3s',
+            SPREADSHEET_ID: '1cD50d0-oSTogEe9tYo9ABUSP1ONCy3SAV92zsYYIG84',
+            RANGO: 'Lista!A2:G'
+        };
+
         let imageBase64 = "";
+        let etiquetasDetectadas = [];
 
         document.getElementById('camera').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -74,6 +83,7 @@
                 return;
             }
             document.getElementById('labels').innerHTML = "Analizando...";
+            document.getElementById('producto').innerHTML = "";
             fetch('https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDR5cxOjdtw9QJO0aZbKHIxJjEnxC2wcaM', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -88,12 +98,14 @@
             .then(data => {
                 const labels = data.responses?.[0]?.labelAnnotations;
                 if (labels && labels.length) {
+                    etiquetasDetectadas = labels.map(label => label.description.toLowerCase());
                     let html = "<b>Etiquetas detectadas:</b><ul>";
                     labels.forEach(label => {
                         html += `<li>${label.description} (${(label.score * 100).toFixed(1)}%)</li>`;
                     });
                     html += "</ul>";
                     document.getElementById('labels').innerHTML = html;
+                    buscarProductoEnSheets();
                 } else {
                     document.getElementById('labels').innerHTML = "No se detectaron objetos claros en la imagen.";
                 }
@@ -102,6 +114,50 @@
                 document.getElementById('labels').innerHTML = "Error al analizar la imagen.";
             });
         });
+
+        function buscarProductoEnSheets() {
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_SHEETS_CONFIG.RANGO}?key=${GOOGLE_SHEETS_CONFIG.API_KEY}`)
+            .then(response => response.json())
+            .then(data => {
+                const filas = data.values;
+                let productoEncontrado = null;
+                if (filas && filas.length) {
+                    // Suponemos que la columna B (índice 1) es el nombre del producto
+                    for (let fila of filas) {
+                        let nombreProducto = (fila[1] || "").toLowerCase();
+                        for (let etiqueta of etiquetasDetectadas) {
+                            if (nombreProducto.includes(etiqueta) || etiqueta.includes(nombreProducto)) {
+                                productoEncontrado = fila;
+                                break;
+                            }
+                        }
+                        if (productoEncontrado) break;
+                    }
+                }
+                mostrarProducto(productoEncontrado);
+            })
+            .catch(err => {
+                document.getElementById('producto').innerHTML = "Error al consultar la hoja de productos.";
+            });
+        }
+
+        function mostrarProducto(producto) {
+            const div = document.getElementById('producto');
+            if (!producto) {
+                div.innerHTML = "<b>No se encontró ningún producto coincidente.</b>";
+            } else {
+                // Suponiendo columnas: A (Código), B (Nombre), C (Descripción), D (Precio), E/F/G (otros)
+                div.innerHTML = `
+                    <h3>Producto detectado</h3>
+                    <ul>
+                        <li><b>Código:</b> ${producto[0] || "-"}</li>
+                        <li><b>Nombre:</b> ${producto[1] || "-"}</li>
+                        <li><b>Descripción:</b> ${producto[2] || "-"}</li>
+                        <li><b>Precio:</b> ${producto[3] || "-"}</li>
+                    </ul>
+                `;
+            }
+        }
     </script>
 </body>
 </html>
