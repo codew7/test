@@ -5,40 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reconocimiento Visual Showroom</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f4f6f8;
-            color: #333;
-        }
-        #camera, #result {
-            margin: 15px 0;
-        }
-        #labels, #producto {
-            background: #fff;
-            border-radius: 10px;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.09);
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            background: #1976d2;
-            color: #fff;
-            font-size: 1em;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        button:active {
-            background: #1565c0;
-        }
-        #preview {
-            max-width: 100%;
-            margin-top: 15px;
-            border-radius: 12px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; color: #333; }
+        #camera, #result { margin: 15px 0; }
+        #labels, #productos { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.09); margin-top: 20px; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; background: #1976d2; color: #fff; font-size: 1em; cursor: pointer; margin-top: 8px; }
+        button:active { background: #1565c0; }
+        #preview { max-width: 100%; margin-top: 15px; border-radius: 12px; }
+        .prod-card { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 12px; }
+        .prod-card:last-child { border-bottom: none; }
+        .prod-img { max-width: 110px; max-height: 80px; border-radius: 8px; margin-right: 12px; vertical-align: middle; }
+        .prod-info { display: inline-block; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -50,14 +26,14 @@
         <button id="analyzeBtn">Analizar imagen</button>
     </div>
     <div id="labels"></div>
-    <div id="producto"></div>
+    <div id="productos"></div>
 
     <script>
         // Configuración de Sheets
         const GOOGLE_SHEETS_CONFIG = {
             API_KEY: 'AIzaSyCLRUk_7BRg4TxtcrFYzsV7opqMlqeXD3s',
             SPREADSHEET_ID: '1cD50d0-oSTogEe9tYo9ABUSP1ONCy3SAV92zsYYIG84',
-            RANGO: 'Lista!A2:G'
+            RANGO: 'Lista!A2:F' // hasta columna F
         };
 
         let imageBase64 = "";
@@ -83,7 +59,7 @@
                 return;
             }
             document.getElementById('labels').innerHTML = "Analizando...";
-            document.getElementById('producto').innerHTML = "";
+            document.getElementById('productos').innerHTML = "";
             fetch('https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDR5cxOjdtw9QJO0aZbKHIxJjEnxC2wcaM', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -105,7 +81,7 @@
                     });
                     html += "</ul>";
                     document.getElementById('labels').innerHTML = html;
-                    buscarProductoEnSheets();
+                    buscarProductosEnSheets();
                 } else {
                     document.getElementById('labels').innerHTML = "No se detectaron objetos claros en la imagen.";
                 }
@@ -115,48 +91,51 @@
             });
         });
 
-        function buscarProductoEnSheets() {
+        function buscarProductosEnSheets() {
             fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_SHEETS_CONFIG.RANGO}?key=${GOOGLE_SHEETS_CONFIG.API_KEY}`)
             .then(response => response.json())
             .then(data => {
                 const filas = data.values;
-                let productoEncontrado = null;
+                let productosCoincidentes = [];
                 if (filas && filas.length) {
-                    // Suponemos que la columna B (índice 1) es el nombre del producto
                     for (let fila of filas) {
-                        let nombreProducto = (fila[1] || "").toLowerCase();
+                        let nombreArticulo = (fila[3] || "").toLowerCase(); // columna D = índice 3
+                        // Coincidencia básica: si cualquier etiqueta aparece en el nombre del artículo
                         for (let etiqueta of etiquetasDetectadas) {
-                            if (nombreProducto.includes(etiqueta) || etiqueta.includes(nombreProducto)) {
-                                productoEncontrado = fila;
+                            if (nombreArticulo.includes(etiqueta) || etiqueta.includes(nombreArticulo)) {
+                                productosCoincidentes.push(fila);
                                 break;
                             }
                         }
-                        if (productoEncontrado) break;
                     }
                 }
-                mostrarProducto(productoEncontrado);
+                mostrarProductos(productosCoincidentes);
             })
             .catch(err => {
-                document.getElementById('producto').innerHTML = "Error al consultar la hoja de productos.";
+                document.getElementById('productos').innerHTML = "Error al consultar la hoja de productos.";
             });
         }
 
-        function mostrarProducto(producto) {
-            const div = document.getElementById('producto');
-            if (!producto) {
+        function mostrarProductos(productos) {
+            const div = document.getElementById('productos');
+            if (!productos || productos.length === 0) {
                 div.innerHTML = "<b>No se encontró ningún producto coincidente.</b>";
-            } else {
-                // Suponiendo columnas: A (Código), B (Nombre), C (Descripción), D (Precio), E/F/G (otros)
-                div.innerHTML = `
-                    <h3>Producto detectado</h3>
-                    <ul>
-                        <li><b>Código:</b> ${producto[0] || "-"}</li>
-                        <li><b>Nombre:</b> ${producto[1] || "-"}</li>
-                        <li><b>Descripción:</b> ${producto[2] || "-"}</li>
-                        <li><b>Precio:</b> ${producto[3] || "-"}</li>
-                    </ul>
-                `;
+                return;
             }
+            let html = "<h3>Productos detectados</h3>";
+            productos.forEach(prod => {
+                html += `<div class="prod-card">
+                    ${prod[1] ? `<img class="prod-img" src="${prod[1]}" alt="Imagen producto">` : ""}
+                    <div class="prod-info">
+                        <b>${prod[3] || "-"}</b><br>
+                        <span><b>Categoría:</b> ${prod[0] || "-"}</span><br>
+                        <span><b>Código:</b> ${prod[2] || "-"}</span><br>
+                        <span><b>Precio ARS:</b> ${prod[4] || "-"}</span><br>
+                        <span><b>Precio USD:</b> ${prod[5] || "-"}</span>
+                    </div>
+                </div>`;
+            });
+            div.innerHTML = html;
         }
     </script>
 </body>
